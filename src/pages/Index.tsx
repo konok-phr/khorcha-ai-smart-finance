@@ -7,19 +7,35 @@ import { ManualEntryForm } from '@/components/ManualEntryForm';
 import { AIChatbot } from '@/components/AIChatbot';
 import { FloatingActions } from '@/components/FloatingActions';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 const Index = () => {
   const [showManualForm, setShowManualForm] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+  const { user, isLoading: authLoading } = useAuth();
   
   const {
     transactions,
+    isLoading,
     addTransaction,
     deleteTransaction,
     totalIncome,
     totalExpense,
     balance,
   } = useTransactions();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">লোড হচ্ছে...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -39,6 +55,7 @@ const Index = () => {
           <TransactionList
             transactions={transactions}
             onDelete={deleteTransaction}
+            isLoading={isLoading}
           />
         </section>
       </main>
