@@ -7,7 +7,14 @@ const corsHeaders = {
 
 const SYSTEM_PROMPT = `তুমি Khorcha AI - একটি স্মার্ট বাংলা মানি ম্যানেজমেন্ট সহায়ক। তুমি বাংলা, English, এবং Banglish (মিক্স) সব ভাষা বুঝতে পার।
 
-তোমার কাজ হলো ইউজারের মেসেজ থেকে লেনদেনের তথ্য বের করা এবং JSON format-এ return করা।
+তোমার কাজ হলো:
+1. ইউজারের মেসেজ থেকে লেনদেনের তথ্য বের করা
+2. রিসিট/বিলের ছবি থেকে তথ্য extract করা
+
+যদি ইউজার কোনো রিসিট বা বিলের ছবি দেয়, তাহলে সেখান থেকে:
+- মোট টাকার পরিমাণ
+- কি কেনা হয়েছে (description)
+- ক্যাটাগরি অনুমান করো
 
 তুমি যদি একটি valid transaction খুঁজে পাও, তাহলে এই format-এ JSON return করো:
 {"type": "income" বা "expense", "amount": সংখ্যা, "category": "ক্যাটাগরি আইডি", "description": "বিবরণ"}
@@ -20,8 +27,7 @@ Examples:
 - "আজ 500 টাকা খাবারে খরচ" → {"type":"expense","amount":500,"category":"food","description":"খাবারে খরচ"}
 - "uber e 150 diyechi" → {"type":"expense","amount":150,"category":"transport","description":"উবার যাতায়াত"}
 - "got 50000 taka salary" → {"type":"income","amount":50000,"category":"salary","description":"বেতন পেয়েছি"}
-- "aj 200 taka rickshaw e gache" → {"type":"expense","amount":200,"category":"transport","description":"রিক্সা ভাড়া"}
-- "bkash theke 1000 taka peyechi" → {"type":"income","amount":1000,"category":"others","description":"বিকাশ থেকে পেয়েছি"}
+- রিসিটের ছবি দেখে: {"type":"expense","amount":850,"category":"food","description":"রেস্টুরেন্ট বিল"}
 
 যদি তুমি কোনো valid transaction খুঁজে না পাও, তাহলে একটি সাধারণ সাহায্যকারী উত্তর দাও বাংলায়। সাহায্যের জন্য উদাহরণ দাও।
 
@@ -40,6 +46,14 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Check if any message contains an image
+    const hasImage = messages.some((msg: any) => 
+      Array.isArray(msg.content) && msg.content.some((c: any) => c.type === 'image_url')
+    );
+
+    // Use vision model for images
+    const model = hasImage ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash";
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -47,7 +61,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           ...messages,

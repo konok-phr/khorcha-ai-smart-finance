@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X, Sparkles, Bot, User } from 'lucide-react';
+import { Send, X, Sparkles, Bot, User, Image, Camera } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  image?: string;
 }
 
 interface AIChatbotProps {
@@ -29,12 +30,14 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
     {
       id: '1',
       role: 'assistant',
-      content: 'আসসালামু আলাইকুম! 👋 আমি Khorcha AI। বাংলা, English, বা Banglish - যেকোনো ভাষায় বলুন আপনার লেনদেন!\n\nউদাহরণ:\n• "আজ 500 টাকা খাবারে খরচ"\n• "uber e 150 diyechi"\n• "got 50k salary"',
+      content: 'আসসালামু আলাইকুম! 👋 আমি Khorcha AI।\n\n🗣️ বাংলা/English/Banglish - যেকোনো ভাষায় বলুন\n📸 রিসিট/বিলের ছবি দিন - আমি পড়ে নিব!\n\nউদাহরণ:\n• "আজ 500 টাকা খাবারে খরচ"\n• "uber e 150 diyechi"\n• রিসিটের ছবি আপলোড করুন',
     }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,9 +47,24 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
     scrollToBottom();
   }, [messages]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('ছবি ৫MB এর কম হতে হবে');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setSelectedImage(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const parseTransaction = (text: string) => {
     try {
-      // Try to find JSON in the response
       const jsonMatch = text.match(/\{[^{}]*"type"[^{}]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
@@ -61,32 +79,51 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isTyping) return;
+    if ((!input.trim() && !selectedImage) || isTyping) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: input || 'এই রিসিট দেখে লেনদেন যোগ করুন',
+      image: selectedImage || undefined,
     };
 
     setMessages(prev => [...prev, userMessage]);
     const userInput = input;
+    const userImage = selectedImage;
     setInput('');
+    setSelectedImage(null);
     setIsTyping(true);
 
     try {
+      // Build message content
+      let messageContent: any;
+      if (userImage) {
+        messageContent = [
+          { type: 'text', text: userInput || 'এই রিসিট/বিল থেকে লেনদেনের তথ্য বের করো' },
+          { type: 'image_url', image_url: { url: userImage } }
+        ];
+      } else {
+        messageContent = userInput;
+      }
+
+      const apiMessages = [...messages, { role: 'user' as const, content: messageContent, image: userImage }]
+        .filter((m): m is ChatMessage => 'id' in m)
+        .map(m => ({
+          role: m.role,
+          content: m.image ? [
+            { type: 'text', text: m.content },
+            { type: 'image_url', image_url: { url: m.image } }
+          ] : m.content,
+        }));
+
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({
-          messages: [...messages, userMessage].map(m => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
+        body: JSON.stringify({ messages: apiMessages }),
       });
 
       if (!resp.ok) {
@@ -101,7 +138,6 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
       let textBuffer = '';
       let assistantContent = '';
 
-      // Create assistant message placeholder
       const assistantId = (Date.now() + 1).toString();
       setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
 
@@ -135,7 +171,6 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
               );
             }
           } catch {
-            // Incomplete JSON, wait for more
             textBuffer = line + '\n' + textBuffer;
             break;
           }
@@ -147,7 +182,6 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
       if (transaction) {
         const result = await onAddTransaction(transaction);
         if (result) {
-          // Replace the JSON response with a friendly message
           const categoryLabels: Record<string, string> = {
             food: 'খাবার', transport: 'যাতায়াত', shopping: 'শপিং',
             bills: 'বিল', health: 'স্বাস্থ্য', entertainment: 'বিনোদন',
@@ -200,7 +234,7 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-primary-foreground">Khorcha AI</h3>
-              <p className="text-xs text-primary-foreground/70">বাংলা • English • Banglish</p>
+              <p className="text-xs text-primary-foreground/70">📸 রিসিট স্ক্যান করুন</p>
             </div>
             <Button
               variant="ghost"
@@ -236,6 +270,13 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
                         : 'bg-secondary text-secondary-foreground rounded-tl-none'
                     }`}
                   >
+                    {msg.image && (
+                      <img 
+                        src={msg.image} 
+                        alt="Receipt" 
+                        className="max-w-full rounded-lg mb-2"
+                      />
+                    )}
                     <p className="text-sm whitespace-pre-line">{msg.content}</p>
                   </div>
                 </motion.div>
@@ -260,8 +301,30 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Image Preview */}
+          {selectedImage && (
+            <div className="px-4 py-2 border-t border-border">
+              <div className="relative inline-block">
+                <img src={selectedImage} alt="Selected" className="h-16 rounded-lg" />
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-expense text-expense-foreground rounded-full flex items-center justify-center"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Input */}
           <div className="p-4 border-t border-border bg-card">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
             <form
               onSubmit={e => {
                 e.preventDefault();
@@ -269,17 +332,27 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
               }}
               className="flex gap-2"
             >
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isTyping}
+                className="shrink-0"
+              >
+                <Camera className="w-4 h-4" />
+              </Button>
               <Input
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                placeholder="আপনার লেনদেন লিখুন..."
+                placeholder="লিখুন বা ছবি দিন..."
                 className="flex-1"
                 disabled={isTyping}
               />
               <Button
                 type="submit"
                 size="icon"
-                disabled={!input.trim() || isTyping}
+                disabled={(!input.trim() && !selectedImage) || isTyping}
                 className="gradient-primary shadow-button shrink-0"
               >
                 <Send className="w-4 h-4" />
