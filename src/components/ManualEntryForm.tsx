@@ -6,10 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Transaction, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/types/transaction';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/types/transaction';
 
 interface ManualEntryFormProps {
-  onSubmit: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
+  onSubmit: (transaction: {
+    type: 'income' | 'expense';
+    amount: number;
+    category: string;
+    description: string;
+  }) => Promise<any>;
   onClose: () => void;
 }
 
@@ -18,21 +23,23 @@ export const ManualEntryForm = ({ onSubmit, onClose }: ManualEntryFormProps) => 
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!amount || !category || !description) return;
 
-    onSubmit({
+    setIsSubmitting(true);
+    await onSubmit({
       type,
       amount: parseFloat(amount),
       category,
       description,
-      date: new Date(),
     });
+    setIsSubmitting(false);
 
     setAmount('');
     setCategory('');
@@ -141,10 +148,11 @@ export const ManualEntryForm = ({ onSubmit, onClose }: ManualEntryFormProps) => 
             {/* Submit */}
             <Button 
               type="submit" 
+              disabled={isSubmitting}
               className="w-full h-12 text-lg gradient-primary shadow-button hover:opacity-90"
             >
               <Plus className="w-5 h-5 mr-2" />
-              লেনদেন যোগ করুন
+              {isSubmitting ? 'সংরক্ষণ হচ্ছে...' : 'লেনদেন যোগ করুন'}
             </Button>
           </form>
         </Card>

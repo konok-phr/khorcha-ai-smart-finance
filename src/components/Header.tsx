@@ -1,7 +1,11 @@
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const Header = () => {
+  const { signOut, user } = useAuth();
+
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -22,6 +26,17 @@ export const Header = () => {
               <p className="text-xs text-muted-foreground">আপনার স্মার্ট অর্থ সহায়ক</p>
             </div>
           </div>
+
+          {user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={signOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+          )}
         </div>
       </div>
     </motion.header>

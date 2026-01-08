@@ -2,11 +2,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Transaction, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/types/transaction';
+import { Transaction } from '@/hooks/useTransactions';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/types/transaction';
 
 interface TransactionListProps {
   transactions: Transaction[];
   onDelete: (id: string) => void;
+  isLoading?: boolean;
 }
 
 const formatCurrency = (amount: number) => {
@@ -17,7 +19,8 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const formatDate = (date: Date) => {
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
   return new Intl.DateTimeFormat('bn-BD', {
     day: 'numeric',
     month: 'short',
@@ -29,7 +32,15 @@ const getCategoryInfo = (type: 'income' | 'expense', categoryId: string) => {
   return categories.find(c => c.id === categoryId) || { label: categoryId, icon: '📦' };
 };
 
-export const TransactionList = ({ transactions, onDelete }: TransactionListProps) => {
+export const TransactionList = ({ transactions, onDelete, isLoading }: TransactionListProps) => {
+  if (isLoading) {
+    return (
+      <Card className="p-8 text-center shadow-card">
+        <p className="text-muted-foreground">লোড হচ্ছে...</p>
+      </Card>
+    );
+  }
+
   if (transactions.length === 0) {
     return (
       <Card className="p-8 text-center shadow-card">
@@ -70,7 +81,7 @@ export const TransactionList = ({ transactions, onDelete }: TransactionListProps
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>{category.label}</span>
                       <span>•</span>
-                      <span>{formatDate(transaction.date)}</span>
+                      <span>{formatDate(transaction.transaction_date)}</span>
                     </div>
                   </div>
                   
@@ -79,7 +90,7 @@ export const TransactionList = ({ transactions, onDelete }: TransactionListProps
                       transaction.type === 'income' ? 'text-income' : 'text-expense'
                     }`}>
                       {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(transaction.amount)}
+                      {formatCurrency(Number(transaction.amount))}
                     </p>
                   </div>
                   
