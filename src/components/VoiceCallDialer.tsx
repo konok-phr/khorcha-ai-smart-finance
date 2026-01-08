@@ -45,7 +45,7 @@ export const VoiceCallDialer = ({
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
-  const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const callTimerRef = useRef<number | null>(null);
 
   // Avoid stale state in speech callbacks
   const lastHeardRef = useRef<string>('');
