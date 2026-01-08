@@ -43,6 +43,7 @@ export const TransactionList = ({ transactions, onDelete, isLoading }: Transacti
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [visibleCount, setVisibleCount] = useState(12);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
@@ -241,60 +242,75 @@ export const TransactionList = ({ transactions, onDelete, isLoading }: Transacti
           </Button>
         </Card>
       ) : (
-        <AnimatePresence mode="popLayout">
-          {filteredTransactions.map((transaction, index) => {
-            const category = getCategoryInfo(transaction.type, transaction.category);
-            
-            return (
-              <motion.div
-                key={transaction.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                transition={{ delay: index * 0.03 }}
-              >
-                <Card className="p-4 shadow-card hover:shadow-float transition-shadow">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-2xl">
-                      {category.icon}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-foreground truncate">
-                          {transaction.description}
+        <>
+          <AnimatePresence mode="popLayout">
+            {filteredTransactions.slice(0, visibleCount).map((transaction, index) => {
+              const category = getCategoryInfo(transaction.type, transaction.category);
+              
+              return (
+                <motion.div
+                  key={transaction.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ delay: index * 0.03 }}
+                >
+                  <Card className="p-4 shadow-card hover:shadow-float transition-shadow">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-2xl">
+                        {category.icon}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-foreground truncate">
+                            {transaction.description}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>{category.label}</span>
+                          <span>•</span>
+                          <span>{formatDate(transaction.transaction_date)}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <p className={`font-semibold ${
+                          transaction.type === 'income' ? 'text-income' : 'text-expense'
+                        }`}>
+                          {transaction.type === 'income' ? '+' : '-'}
+                          {formatCurrency(Number(transaction.amount))}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{category.label}</span>
-                        <span>•</span>
-                        <span>{formatDate(transaction.transaction_date)}</span>
-                      </div>
+                      
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-muted-foreground hover:text-expense"
+                        onClick={() => onDelete(transaction.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    
-                    <div className="text-right">
-                      <p className={`font-semibold ${
-                        transaction.type === 'income' ? 'text-income' : 'text-expense'
-                      }`}>
-                        {transaction.type === 'income' ? '+' : '-'}
-                        {formatCurrency(Number(transaction.amount))}
-                      </p>
-                    </div>
-                    
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-muted-foreground hover:text-expense"
-                      onClick={() => onDelete(transaction.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+
+          {/* Load More Button */}
+          {filteredTransactions.length > visibleCount && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <Button
+                variant="outline"
+                className="w-full mt-2"
+                onClick={() => setVisibleCount((prev) => prev + 12)}
+              >
+                আরো দেখুন ({filteredTransactions.length - visibleCount}টি বাকি)
+              </Button>
+            </motion.div>
+          )}
+        </>
       )}
     </div>
   );

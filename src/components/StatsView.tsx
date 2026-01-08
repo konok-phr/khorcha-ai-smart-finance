@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStats, DateRange } from '@/hooks/useStats';
 import { Transaction } from '@/hooks/useTransactions';
 import { EXPENSE_CATEGORIES } from '@/types/transaction';
-import { TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Calendar, ArrowUpRight, ArrowDownRight, ChevronRight } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subYears, setMonth, setYear } from 'date-fns';
+import { bn } from 'date-fns/locale';
 
 interface StatsViewProps {
   transactions: Transaction[];
@@ -27,15 +30,68 @@ const getCategoryLabel = (categoryId: string) => {
   return cat ? `${cat.icon} ${cat.label}` : categoryId;
 };
 
-export const StatsView = ({ transactions }: StatsViewProps) => {
-  const [range, setRange] = useState<DateRange>('monthly');
-  const stats = useStats(transactions, range);
+// Generate month options (last 24 months)
+const generateMonthOptions = () => {
+  const options = [];
+  const now = new Date();
+  for (let i = 0; i < 24; i++) {
+    const d = subMonths(now, i);
+    options.push({
+      value: format(d, 'yyyy-MM'),
+      label: format(d, 'MMMM yyyy', { locale: bn }),
+    });
+  }
+  return options;
+};
 
-  const ranges: { id: DateRange; label: string }[] = [
-    { id: 'daily', label: 'আজ' },
-    { id: 'weekly', label: 'সপ্তাহ' },
-    { id: 'monthly', label: 'মাস' },
-  ];
+// Generate year options (last 5 years)
+const generateYearOptions = () => {
+  const options = [];
+  const now = new Date();
+  for (let i = 0; i < 5; i++) {
+    const y = now.getFullYear() - i;
+    options.push({ value: y.toString(), label: `${y}` });
+  }
+  return options;
+};
+
+export const StatsView = ({ transactions }: StatsViewProps) => {
+  const [rangeType, setRangeType] = useState<'preset' | 'custom'>('preset');
+  const [presetRange, setPresetRange] = useState<DateRange>('monthly');
+  const [customMode, setCustomMode] = useState<'single' | 'range'>('single');
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [startMonth, setStartMonth] = useState(format(subMonths(new Date(), 5), 'yyyy-MM'));
+  const [endMonth, setEndMonth] = useState(format(new Date(), 'yyyy-MM'));
+
+  const monthOptions = useMemo(() => generateMonthOptions(), []);
+  const yearOptions = useMemo(() => generateYearOptions(), []);
+
+  // Calculate custom date range
+  const { customStart, customEnd, effectiveRange } = useMemo(() => {
+    if (rangeType === 'preset') {
+      return { customStart: undefined, customEnd: undefined, effectiveRange: presetRange };
+    }
+
+    if (customMode === 'single') {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const d = new Date(year, month - 1, 1);
+      return {
+        customStart: startOfMonth(d),
+        customEnd: endOfMonth(d),
+        effectiveRange: 'custom' as DateRange,
+      };
+    } else {
+      const [sy, sm] = startMonth.split('-').map(Number);
+      const [ey, em] = endMonth.split('-').map(Number);
+      return {
+        customStart: startOfMonth(new Date(sy, sm - 1, 1)),
+        customEnd: endOfMonth(new Date(ey, em - 1, 1)),
+        effectiveRange: 'custom' as DateRange,
+      };
+    }
+  }, [rangeType, presetRange, customMode, selectedMonth, startMonth, endMonth]);
+
+  const stats = useStats(transactions, effectiveRange, customStart, customEnd);
 
   const pieData = stats.categoryBreakdown.map((item, idx) => ({
     name: getCategoryLabel(item.category),
@@ -46,21 +102,113 @@ export const StatsView = ({ transactions }: StatsViewProps) => {
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="flex gap-2 p-1 bg-secondary rounded-xl">
-        {ranges.map(r => (
+      <Card className="p-4 shadow-card space-y-3">
+        {/* Quick Presets */}
+        <div className="flex gap-2">
+          {[
+            { id: 'daily' as DateRange, label: 'আজ' },
+            { id: 'weekly' as DateRange, label: 'সপ্তাহ' },
+            { id: 'monthly' as DateRange, label: 'মাস' },
+          ].map((r) => (
+            <button
+              key={r.id}
+              onClick={() => {
+                setRangeType('preset');
+                setPresetRange(r.id);
+              }}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                rangeType === 'preset' && presetRange === r.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
           <button
-            key={r.id}
-            onClick={() => setRange(r.id)}
+            onClick={() => setRangeType('custom')}
             className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-              range === r.id
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+              rangeType === 'custom'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-muted-foreground hover:text-foreground'
             }`}
           >
-            {r.label}
+            কাস্টম
           </button>
-        ))}
-      </div>
+        </div>
+
+        {/* Custom Date Selector */}
+        {rangeType === 'custom' && (
+          <div className="space-y-3 pt-2 border-t border-border">
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={customMode === 'single' ? 'default' : 'outline'}
+                onClick={() => setCustomMode('single')}
+                className="flex-1"
+              >
+                একটি মাস
+              </Button>
+              <Button
+                size="sm"
+                variant={customMode === 'range' ? 'default' : 'outline'}
+                onClick={() => setCustomMode('range')}
+                className="flex-1"
+              >
+                রেঞ্জ
+              </Button>
+            </div>
+
+            {customMode === 'single' ? (
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger>
+                  <SelectValue placeholder="মাস বাছুন" />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Select value={startMonth} onValueChange={setStartMonth}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="শুরু" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                <Select value={endMonth} onValueChange={setEndMonth}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="শেষ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Period Label */}
+        <p className="text-sm text-muted-foreground text-center pt-1">
+          📅 {stats.periodLabel}
+        </p>
+      </Card>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
