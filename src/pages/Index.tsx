@@ -5,6 +5,7 @@ import { BalanceCard } from '@/components/BalanceCard';
 import { TransactionList } from '@/components/TransactionList';
 import { ManualEntryForm } from '@/components/ManualEntryForm';
 import { AIChatbot } from '@/components/AIChatbot';
+import { VoiceCallDialer } from '@/components/VoiceCallDialer';
 import { FloatingActions } from '@/components/FloatingActions';
 import { BottomNav } from '@/components/BottomNav';
 import { StatsView } from '@/components/StatsView';
@@ -19,6 +20,7 @@ import { Navigate } from 'react-router-dom';
 const Index = () => {
   const [showManualForm, setShowManualForm] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+  const [showVoiceCall, setShowVoiceCall] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const { user, isLoading: authLoading } = useAuth();
   
@@ -142,6 +144,7 @@ const Index = () => {
         <FloatingActions
           onOpenManual={() => setShowManualForm(true)}
           onOpenAI={() => setShowAIChat(true)}
+          onOpenCall={() => setShowVoiceCall(true)}
         />
       )}
 
@@ -161,6 +164,17 @@ const Index = () => {
           <AIChatbot
             onAddTransaction={handleAddTransaction}
             onClose={() => setShowAIChat(false)}
+            accounts={accounts}
+            onUpdateAccountBalance={handleUpdateAccountBalance}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showVoiceCall && (
+          <VoiceCallDialer
+            onAddTransaction={handleAddTransaction}
+            onClose={() => setShowVoiceCall(false)}
             accounts={accounts}
             onUpdateAccountBalance={handleUpdateAccountBalance}
           />
