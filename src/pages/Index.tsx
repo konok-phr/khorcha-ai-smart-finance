@@ -10,6 +10,7 @@ import { FloatingActions } from '@/components/FloatingActions';
 import { BottomNav } from '@/components/BottomNav';
 import { StatsView } from '@/components/StatsView';
 import { AccountsView } from '@/components/AccountsView';
+import { LoansView } from '@/components/LoansView';
 import { SettingsView } from '@/components/SettingsView';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useAccounts } from '@/hooks/useAccounts';
@@ -123,6 +124,8 @@ const Index = () => {
         );
       case 'stats':
         return <StatsView transactions={transactions} />;
+      case 'loans':
+        return <LoansView />;
       case 'accounts':
         return <AccountsView />;
       case 'settings':

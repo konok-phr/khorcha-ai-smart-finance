@@ -83,6 +83,48 @@ export type Database = {
         }
         Relationships: []
       }
+      loans: {
+        Row: {
+          amount: number
+          created_at: string
+          direction: string
+          due_date: string | null
+          id: string
+          loan_date: string
+          note: string | null
+          person_name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          direction: string
+          due_date?: string | null
+          id?: string
+          loan_date?: string
+          note?: string | null
+          person_name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          direction?: string
+          due_date?: string | null
+          id?: string
+          loan_date?: string
+          note?: string | null
+          person_name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recurring_transactions: {
         Row: {
           account_id: string | null
