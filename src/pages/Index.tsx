@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Header } from '@/components/Header';
 import { BalanceCard } from '@/components/BalanceCard';
@@ -11,6 +11,8 @@ import { StatsView } from '@/components/StatsView';
 import { AccountsView } from '@/components/AccountsView';
 import { SettingsView } from '@/components/SettingsView';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useAccounts } from '@/hooks/useAccounts';
+import { useBudgetAlerts } from '@/hooks/useBudgetAlerts';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 
@@ -29,6 +31,58 @@ const Index = () => {
     totalExpense,
     balance,
   } = useTransactions();
+
+  const {
+    accounts,
+    addToBalance,
+    deductFromBalance,
+    getDefaultAccount,
+  } = useAccounts();
+
+  // Budget alerts
+  useBudgetAlerts({ transactions, enabled: true });
+
+  const handleAddTransaction = useCallback(async (transaction: {
+    type: 'income' | 'expense';
+    amount: number;
+    category: string;
+    description: string;
+    transaction_date?: string;
+    account_id?: string;
+  }) => {
+    // If no account specified, use default
+    let accountId = transaction.account_id;
+    if (!accountId) {
+      const defaultAccount = getDefaultAccount();
+      if (defaultAccount) {
+        accountId = defaultAccount.id;
+      }
+    }
+
+    const result = await addTransaction({
+      ...transaction,
+      account_id: accountId,
+    } as any);
+
+    // Update account balance
+    if (result && accountId) {
+      if (transaction.type === 'income') {
+        await addToBalance(accountId, transaction.amount);
+      } else {
+        await deductFromBalance(accountId, transaction.amount);
+      }
+    }
+
+    return result;
+  }, [addTransaction, addToBalance, deductFromBalance, getDefaultAccount]);
+
+  const handleUpdateAccountBalance = useCallback(async (accountId: string, amount: number, isAddition: boolean) => {
+    if (isAddition) {
+      return await addToBalance(accountId, amount);
+    } else {
+      return await deductFromBalance(accountId, amount);
+    }
+  }, [addToBalance, deductFromBalance]);
 
   if (authLoading) {
     return (
@@ -96,7 +150,7 @@ const Index = () => {
       <AnimatePresence>
         {showManualForm && (
           <ManualEntryForm
-            onSubmit={addTransaction}
+            onSubmit={handleAddTransaction}
             onClose={() => setShowManualForm(false)}
           />
         )}
@@ -105,8 +159,10 @@ const Index = () => {
       <AnimatePresence>
         {showAIChat && (
           <AIChatbot
-            onAddTransaction={addTransaction}
+            onAddTransaction={handleAddTransaction}
             onClose={() => setShowAIChat(false)}
+            accounts={accounts}
+            onUpdateAccountBalance={handleUpdateAccountBalance}
           />
         )}
       </AnimatePresence>

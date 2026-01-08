@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X, Sparkles, Bot, User, Image, Camera } from 'lucide-react';
+import { Send, X, Sparkles, Bot, User, Camera } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { Account } from '@/hooks/useAccounts';
 
 interface ChatMessage {
   id: string;
@@ -13,24 +14,37 @@ interface ChatMessage {
   image?: string;
 }
 
+interface TransactionData {
+  type: 'income' | 'expense';
+  amount: number;
+  category: string;
+  description: string;
+  transaction_date?: string;
+  account_name?: string | null;
+}
+
 interface AIChatbotProps {
   onAddTransaction: (transaction: {
     type: 'income' | 'expense';
     amount: number;
     category: string;
     description: string;
+    transaction_date?: string;
+    account_id?: string;
   }) => Promise<any>;
   onClose: () => void;
+  accounts?: Account[];
+  onUpdateAccountBalance?: (accountId: string, amount: number, isAddition: boolean) => Promise<boolean>;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
-export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
+export const AIChatbot = ({ onAddTransaction, onClose, accounts = [], onUpdateAccountBalance }: AIChatbotProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       role: 'assistant',
-      content: 'আসসালামু আলাইকুম! 👋 আমি Khorcha AI।\n\n🗣️ বাংলা/English/Banglish - যেকোনো ভাষায় বলুন\n📸 রিসিট/বিলের ছবি দিন - আমি পড়ে নিব!\n\nউদাহরণ:\n• "আজ 500 টাকা খাবারে খরচ"\n• "uber e 150 diyechi"\n• রিসিটের ছবি আপলোড করুন',
+      content: 'আসসালামু আলাইকুম! 👋 আমি Khorcha AI।\n\n🗣️ বাংলা/English/Banglish - যেকোনো ভাষায় বলুন\n📸 রিসিট/বিলের ছবি দিন - আমি পড়ে নিব!\n📅 তারিখ বলুন - "গত সপ্তাহে", "গতকাল", "5 তারিখ"\n💳 অ্যাকাউন্ট বলুন - "bkash থেকে", "card দিয়ে"\n\nউদাহরণ:\n• "গতকাল bkash এ 500 টাকা পেয়েছি"\n• "গত মাসের 5 তারিখ 1000 টাকা বিল দিয়েছি"',
     }
   ]);
   const [input, setInput] = useState('');
@@ -63,13 +77,33 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
     reader.readAsDataURL(file);
   };
 
-  const parseTransaction = (text: string) => {
+  const findAccountByName = (accountName: string | null | undefined): Account | undefined => {
+    if (!accountName || !accounts.length) return undefined;
+    
+    const lowerName = accountName.toLowerCase();
+    return accounts.find(a => 
+      a.name.toLowerCase().includes(lowerName) ||
+      lowerName.includes(a.name.toLowerCase()) ||
+      (a.type === 'cash' && (lowerName.includes('cash') || lowerName.includes('নগদ'))) ||
+      (a.type === 'mobile_banking' && (
+        lowerName.includes('bkash') || lowerName.includes('বিকাশ') ||
+        lowerName.includes('nagad') || lowerName.includes('নগদ') ||
+        lowerName.includes('rocket')
+      ))
+    );
+  };
+
+  const getDefaultAccount = (): Account | undefined => {
+    return accounts.find(a => a.is_default) || accounts.find(a => a.type === 'cash') || accounts[0];
+  };
+
+  const parseTransaction = (text: string): TransactionData | null => {
     try {
       const jsonMatch = text.match(/\{[^{}]*"type"[^{}]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.type && parsed.amount && parsed.category) {
-          return parsed;
+          return parsed as TransactionData;
         }
       }
     } catch {
@@ -180,15 +214,50 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
       // Check if response contains a transaction
       const transaction = parseTransaction(assistantContent);
       if (transaction) {
-        const result = await onAddTransaction(transaction);
+        // Find account
+        let targetAccount = findAccountByName(transaction.account_name);
+        if (!targetAccount) {
+          targetAccount = getDefaultAccount();
+        }
+
+        const transactionData: any = {
+          type: transaction.type,
+          amount: transaction.amount,
+          category: transaction.category,
+          description: transaction.description,
+        };
+
+        // Add transaction_date if provided
+        if (transaction.transaction_date) {
+          transactionData.transaction_date = transaction.transaction_date;
+        }
+
+        // Add account_id if found
+        if (targetAccount) {
+          transactionData.account_id = targetAccount.id;
+        }
+
+        const result = await onAddTransaction(transactionData);
+        
         if (result) {
+          // Update account balance
+          if (targetAccount && onUpdateAccountBalance) {
+            const isAddition = transaction.type === 'income';
+            await onUpdateAccountBalance(targetAccount.id, transaction.amount, isAddition);
+          }
+
           const categoryLabels: Record<string, string> = {
             food: 'খাবার', transport: 'যাতায়াত', shopping: 'শপিং',
             bills: 'বিল', health: 'স্বাস্থ্য', entertainment: 'বিনোদন',
             education: 'শিক্ষা', salary: 'বেতন', business: 'ব্যবসা',
             investment: 'বিনিয়োগ', freelance: 'ফ্রিল্যান্স', gift: 'উপহার', others: 'অন্যান্য'
           };
-          const friendlyMsg = `✅ লেনদেন সংরক্ষিত!\n\n${transaction.type === 'income' ? '💰 আয়' : '💸 খরচ'}: ৳${transaction.amount.toLocaleString('bn-BD')}\n📁 ক্যাটাগরি: ${categoryLabels[transaction.category] || transaction.category}\n📝 ${transaction.description}\n\nআর কিছু যোগ করতে চান?`;
+          
+          const accountInfo = targetAccount ? `\n💳 অ্যাকাউন্ট: ${targetAccount.name}` : '';
+          const dateInfo = transaction.transaction_date ? `\n📅 তারিখ: ${transaction.transaction_date}` : '';
+          
+          const friendlyMsg = `✅ লেনদেন সংরক্ষিত!\n\n${transaction.type === 'income' ? '💰 আয়' : '💸 খরচ'}: ৳${transaction.amount.toLocaleString('bn-BD')}\n📁 ক্যাটাগরি: ${categoryLabels[transaction.category] || transaction.category}\n📝 ${transaction.description}${dateInfo}${accountInfo}\n\nআর কিছু যোগ করতে চান?`;
+          
           setMessages(prev =>
             prev.map(m =>
               m.id === assistantId ? { ...m, content: friendlyMsg } : m
@@ -234,7 +303,7 @@ export const AIChatbot = ({ onAddTransaction, onClose }: AIChatbotProps) => {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-primary-foreground">Khorcha AI</h3>
-              <p className="text-xs text-primary-foreground/70">📸 রিসিট স্ক্যান করুন</p>
+              <p className="text-xs text-primary-foreground/70">📸 রিসিট স্ক্যান • 📅 তারিখ বোঝে</p>
             </div>
             <Button
               variant="ghost"

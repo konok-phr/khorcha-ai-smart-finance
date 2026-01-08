@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, CreditCard, Trash2, Building2, Smartphone, Banknote, X } from 'lucide-react';
+import { Plus, CreditCard, Trash2, ArrowRightLeft, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,10 +25,17 @@ const formatCurrency = (amount: number) => {
 };
 
 export const AccountsView = () => {
-  const { accounts, isLoading, addAccount, deleteAccount } = useAccounts();
+  const { accounts, isLoading, addAccount, deleteAccount, transfer } = useAccounts();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showTransferForm, setShowTransferForm] = useState(false);
   const [name, setName] = useState('');
   const [type, setType] = useState<Account['type']>('bank');
+  const [initialBalance, setInitialBalance] = useState('');
+  
+  // Transfer state
+  const [fromAccount, setFromAccount] = useState('');
+  const [toAccount, setToAccount] = useState('');
+  const [transferAmount, setTransferAmount] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +49,25 @@ export const AccountsView = () => {
       color: '#10B981',
     });
 
+    // If initial balance provided, we'd need to update it
+    // For now, just reset form
     setName('');
     setType('bank');
+    setInitialBalance('');
     setShowAddForm(false);
+  };
+
+  const handleTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fromAccount || !toAccount || !transferAmount || fromAccount === toAccount) return;
+
+    const success = await transfer(fromAccount, toAccount, parseFloat(transferAmount));
+    if (success) {
+      setFromAccount('');
+      setToAccount('');
+      setTransferAmount('');
+      setShowTransferForm(false);
+    }
   };
 
   const totalBalance = accounts.reduce((sum, a) => sum + Number(a.balance), 0);
@@ -71,14 +94,24 @@ export const AccountsView = () => {
         </Card>
       </motion.div>
 
-      {/* Add Account Button */}
-      <Button
-        onClick={() => setShowAddForm(true)}
-        className="w-full gradient-primary shadow-button"
-      >
-        <Plus className="w-4 h-4 mr-2" />
-        নতুন অ্যাকাউন্ট যোগ করুন
-      </Button>
+      {/* Action Buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          onClick={() => setShowAddForm(true)}
+          className="gradient-primary shadow-button"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          অ্যাকাউন্ট যোগ
+        </Button>
+        <Button
+          onClick={() => setShowTransferForm(true)}
+          variant="outline"
+          disabled={accounts.length < 2}
+        >
+          <ArrowRightLeft className="w-4 h-4 mr-2" />
+          ট্রান্সফার
+        </Button>
+      </div>
 
       {/* Accounts List */}
       <div className="space-y-3">
@@ -100,20 +133,31 @@ export const AccountsView = () => {
                       {account.icon || typeInfo?.icon}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">{account.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{account.name}</p>
+                        {account.is_default && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                            ডিফল্ট
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground">{typeInfo?.label}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">{formatCurrency(Number(account.balance))}</p>
+                      <p className={`font-semibold ${Number(account.balance) < 0 ? 'text-expense' : ''}`}>
+                        {formatCurrency(Number(account.balance))}
+                      </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-expense"
-                      onClick={() => deleteAccount(account.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {!account.is_default && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-expense"
+                        onClick={() => deleteAccount(account.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </Card>
               </motion.div>
@@ -181,16 +225,129 @@ export const AccountsView = () => {
                     <Label htmlFor="name">অ্যাকাউন্টের নাম</Label>
                     <Input
                       id="name"
-                      placeholder="যেমন: ডাচ বাংলা ব্যাংক"
+                      placeholder="যেমন: ডাচ বাংলা ব্যাংক, bKash"
                       value={name}
                       onChange={e => setName(e.target.value)}
                       required
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="balance">প্রাথমিক ব্যালেন্স (ঐচ্ছিক)</Label>
+                    <Input
+                      id="balance"
+                      type="number"
+                      placeholder="০"
+                      value={initialBalance}
+                      onChange={e => setInitialBalance(e.target.value)}
+                    />
+                  </div>
+
                   <Button type="submit" className="w-full gradient-primary shadow-button">
                     <Plus className="w-4 h-4 mr-2" />
                     অ্যাকাউন্ট যোগ করুন
+                  </Button>
+                </form>
+              </Card>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Transfer Modal */}
+      <AnimatePresence>
+        {showTransferForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-foreground/20 backdrop-blur-sm"
+            onClick={() => setShowTransferForm(false)}
+          >
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-md"
+            >
+              <Card className="p-6 shadow-float">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold">টাকা ট্রান্সফার</h2>
+                  <Button variant="ghost" size="icon" onClick={() => setShowTransferForm(false)}>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <form onSubmit={handleTransfer} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label>কোথা থেকে</Label>
+                    <Select value={fromAccount} onValueChange={setFromAccount}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="অ্যাকাউন্ট বাছুন" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map(acc => (
+                          <SelectItem key={acc.id} value={acc.id} disabled={acc.id === toAccount}>
+                            <span className="flex items-center gap-2">
+                              <span>{acc.icon}</span>
+                              <span>{acc.name}</span>
+                              <span className="text-muted-foreground">
+                                ({formatCurrency(Number(acc.balance))})
+                              </span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                      <ArrowRightLeft className="w-5 h-5 text-muted-foreground rotate-90" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>কোথায়</Label>
+                    <Select value={toAccount} onValueChange={setToAccount}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="অ্যাকাউন্ট বাছুন" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map(acc => (
+                          <SelectItem key={acc.id} value={acc.id} disabled={acc.id === fromAccount}>
+                            <span className="flex items-center gap-2">
+                              <span>{acc.icon}</span>
+                              <span>{acc.name}</span>
+                              <span className="text-muted-foreground">
+                                ({formatCurrency(Number(acc.balance))})
+                              </span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>পরিমাণ (৳)</Label>
+                    <Input
+                      type="number"
+                      placeholder="০"
+                      value={transferAmount}
+                      onChange={e => setTransferAmount(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full gradient-primary shadow-button"
+                    disabled={!fromAccount || !toAccount || !transferAmount || fromAccount === toAccount}
+                  >
+                    <ArrowRightLeft className="w-4 h-4 mr-2" />
+                    ট্রান্সফার করুন
                   </Button>
                 </form>
               </Card>
