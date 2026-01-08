@@ -70,7 +70,7 @@ const Index = () => {
       case 'accounts':
         return <AccountsView />;
       case 'settings':
-        return <SettingsView />;
+        return <SettingsView transactions={transactions} />;
       default:
         return null;
     }
