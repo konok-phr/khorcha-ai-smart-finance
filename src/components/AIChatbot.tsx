@@ -184,6 +184,7 @@ export const AIChatbot = ({ onAddTransaction, onClose, accounts = [], onUpdateAc
   };
 
   const handleSend = async () => {
+    if (pendingTransaction) return;
     if ((!input.trim() && !selectedImage) || isTyping) return;
 
     const userMessage: ChatMessage = {
@@ -193,34 +194,31 @@ export const AIChatbot = ({ onAddTransaction, onClose, accounts = [], onUpdateAc
       image: selectedImage || undefined,
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const history = [...messages, userMessage];
+    setMessages(history);
+
     const userInput = input;
     const userImage = selectedImage;
     setInput('');
     setSelectedImage(null);
     setIsTyping(true);
 
-    try {
-      // Build message content
-      let messageContent: any;
-      if (userImage) {
-        messageContent = [
-          { type: 'text', text: userInput || 'এই রিসিট/বিল থেকে লেনদেনের তথ্য বের করো' },
-          { type: 'image_url', image_url: { url: userImage } }
-        ];
-      } else {
-        messageContent = userInput;
-      }
+    // Cancel any previous in-flight request (safety)
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
 
-      const apiMessages = [...messages, { role: 'user' as const, content: messageContent, image: userImage }]
-        .filter((m): m is ChatMessage => 'id' in m)
-        .map(m => ({
-          role: m.role,
-          content: m.image ? [
-            { type: 'text', text: m.content },
-            { type: 'image_url', image_url: { url: m.image } }
-          ] : m.content,
-        }));
+    try {
+      const apiMessages = history.map(m => ({
+        role: m.role,
+        content: m.image
+          ? [
+              { type: 'text', text: m.content },
+              { type: 'image_url', image_url: { url: m.image } },
+            ]
+          : m.content,
+      }));
 
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
@@ -229,6 +227,7 @@ export const AIChatbot = ({ onAddTransaction, onClose, accounts = [], onUpdateAc
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ messages: apiMessages }),
+        signal: controller.signal,
       });
 
       if (!resp.ok) {
@@ -246,7 +245,34 @@ export const AIChatbot = ({ onAddTransaction, onClose, accounts = [], onUpdateAc
       const assistantId = (Date.now() + 1).toString();
       setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
 
-      while (true) {
+      const processLine = (rawLine: string) => {
+        let line = rawLine;
+        if (line.endsWith('\r')) line = line.slice(0, -1);
+        if (line.startsWith(':') || line.trim() === '') return { done: false };
+        if (!line.startsWith('data: ')) return { done: false };
+
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === '[DONE]') return { done: true };
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            assistantContent += content;
+            setMessages(prev =>
+              prev.map(m => (m.id === assistantId ? { ...m, content: assistantContent } : m))
+            );
+          }
+        } catch {
+          // Put back and wait for more chunks
+          textBuffer = rawLine + '\n' + textBuffer;
+        }
+
+        return { done: false };
+      };
+
+      let streamDone = false;
+      while (!streamDone) {
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -254,54 +280,49 @@ export const AIChatbot = ({ onAddTransaction, onClose, accounts = [], onUpdateAc
 
         let newlineIndex: number;
         while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
+          const line = textBuffer.slice(0, newlineIndex);
           textBuffer = textBuffer.slice(newlineIndex + 1);
-
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              assistantContent += content;
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantId ? { ...m, content: assistantContent } : m
-                )
-              );
-            }
-          } catch {
-            textBuffer = line + '\n' + textBuffer;
+          const r = processLine(line);
+          if (r.done) {
+            streamDone = true;
             break;
           }
         }
       }
 
-      // Check if response contains a transaction
+      // Final flush (in case stream ended without trailing \n)
+      if (textBuffer.trim()) {
+        for (const raw of textBuffer.split('\n')) {
+          if (!raw) continue;
+          const r = processLine(raw);
+          if (r.done) break;
+        }
+      }
+
+      if (!assistantContent.trim()) {
+        setMessages(prev =>
+          prev.map(m => (m.id === assistantId ? { ...m, content: 'আমি ঠিক বুঝতে পারিনি—আরেকটু সহজ করে বলবেন?' } : m))
+        );
+        return;
+      }
+
+      // If response contains a transaction JSON, handle it
       const transaction = parseTransaction(assistantContent);
       if (transaction) {
-        // Check if AI is asking for confirmation
         if (transaction.confirm && transaction.question) {
           setPendingTransaction(transaction);
           setMessages(prev =>
-            prev.map(m =>
-              m.id === assistantId ? { ...m, content: `🤔 ${transaction.question}` } : m
-            )
+            prev.map(m => (m.id === assistantId ? { ...m, content: `🤔 ${transaction.question}` } : m))
           );
         } else {
-          // Direct add without confirmation
           setMessages(prev => prev.filter(m => m.id !== assistantId));
           await addTransactionToDb(transaction);
         }
       }
     } catch (error) {
+      const isAbort = error instanceof DOMException && error.name === 'AbortError';
       console.error('Chat error:', error);
-      toast.error(error instanceof Error ? error.message : 'AI সার্ভিসে সমস্যা হয়েছে');
+      toast.error(isAbort ? 'AI রেসপন্স আসতে দেরি হচ্ছে—আবার চেষ্টা করুন।' : (error instanceof Error ? error.message : 'AI সার্ভিসে সমস্যা হয়েছে'));
       setMessages(prev => [
         ...prev,
         {
@@ -311,7 +332,9 @@ export const AIChatbot = ({ onAddTransaction, onClose, accounts = [], onUpdateAc
         },
       ]);
     } finally {
+      window.clearTimeout(timeoutId);
       setIsTyping(false);
+      abortControllerRef.current = null;
     }
   };
 
