@@ -83,6 +83,59 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_transactions: {
+        Row: {
+          account_id: string | null
+          amount: number
+          category: string
+          created_at: string
+          description: string
+          frequency: string
+          id: string
+          is_active: boolean
+          next_date: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          category: string
+          created_at?: string
+          description: string
+          frequency: string
+          id?: string
+          is_active?: boolean
+          next_date: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          category?: string
+          created_at?: string
+          description?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          next_date?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string | null
