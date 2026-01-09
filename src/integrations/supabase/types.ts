@@ -83,6 +83,54 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_cards: {
+        Row: {
+          bill_generation_date: number
+          card_name: string
+          card_number_last4: string | null
+          color: string | null
+          created_at: string
+          credit_limit: number
+          current_balance: number
+          due_date: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bill_generation_date?: number
+          card_name: string
+          card_number_last4?: string | null
+          color?: string | null
+          created_at?: string
+          credit_limit?: number
+          current_balance?: number
+          due_date?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bill_generation_date?: number
+          card_name?: string
+          card_number_last4?: string | null
+          color?: string | null
+          created_at?: string
+          credit_limit?: number
+          current_balance?: number
+          due_date?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       loans: {
         Row: {
           amount: number

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, BarChart3, Wallet, HandCoins, Settings } from 'lucide-react';
+import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
@@ -9,6 +9,7 @@ interface BottomNavProps {
 const navItems = [
   { id: 'home', label: 'হোম', icon: Home },
   { id: 'stats', label: 'রিপোর্ট', icon: BarChart3 },
+  { id: 'credit-cards', label: 'কার্ড', icon: CreditCard },
   { id: 'loans', label: 'ধার', icon: HandCoins },
   { id: 'accounts', label: 'অ্যাকাউন্ট', icon: Wallet },
   { id: 'settings', label: 'সেটিংস', icon: Settings },
