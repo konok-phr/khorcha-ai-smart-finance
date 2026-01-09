@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, Menu, RefreshCw, History, FileText, Target } from 'lucide-react';
+import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, Menu, RefreshCw, History, FileText, Target, LineChart, X } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,6 +19,7 @@ const mainNavItems = [
 const sidebarNavItems = [
   { id: 'reports', label: 'আর্থিক রিপোর্ট', icon: FileText, description: 'PDF এক্সপোর্ট ও বিশ্লেষণ' },
   { id: 'goals', label: 'সেভিংস গোল', icon: Target, description: 'সঞ্চয় লক্ষ্য ট্র্যাকার' },
+  { id: 'investments', label: 'বিনিয়োগ ট্র্যাকার', icon: LineChart, description: 'স্টক, ফান্ড ও সোনা' },
   { id: 'recurring', label: 'রিকারিং লেনদেন', icon: RefreshCw, description: 'মাসিক বিল ও সাবস্ক্রিপশন' },
   { id: 'credit-cards', label: 'ক্রেডিট কার্ড', icon: CreditCard, description: 'কার্ড ম্যানেজমেন্ট' },
   { id: 'loans', label: 'ধার/ঋণ', icon: HandCoins, description: 'ধার দেওয়া ও নেওয়া' },
@@ -100,12 +101,18 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
         </div>
       </nav>
 
-      {/* Left Sidebar Sheet - No default close button */}
+      {/* Left Sidebar Sheet - Custom close button */}
       <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
         <SheetContent side="left" className="w-[280px] p-0 [&>button]:hidden">
           <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="p-6 gradient-primary">
+            {/* Header with Close Button */}
+            <div className="p-6 gradient-primary relative">
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="absolute right-4 top-4 p-2 rounded-full bg-primary-foreground/20 hover:bg-primary-foreground/30 transition-colors"
+              >
+                <X className="w-4 h-4 text-primary-foreground" />
+              </button>
               <div>
                 <h2 className="text-xl font-bold text-primary-foreground">Khorcha AI</h2>
                 <p className="text-sm text-primary-foreground/80 mt-1">স্মার্ট মানি ম্যানেজার</p>
