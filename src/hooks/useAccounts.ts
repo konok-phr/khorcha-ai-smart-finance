@@ -73,6 +73,39 @@ export const useAccounts = () => {
     return accounts.find(a => a.is_default) || accounts.find(a => a.type === 'cash') || accounts[0];
   }, [accounts]);
 
+  const setDefaultAccount = useCallback(async (accountId: string) => {
+    if (!user) return false;
+
+    try {
+      // First, unset all defaults
+      const { error: unsetError } = await supabase
+        .from('accounts')
+        .update({ is_default: false })
+        .eq('user_id', user.id);
+
+      if (unsetError) throw unsetError;
+
+      // Then set the new default
+      const { error: setError } = await supabase
+        .from('accounts')
+        .update({ is_default: true })
+        .eq('id', accountId);
+
+      if (setError) throw setError;
+
+      setAccounts(prev => 
+        prev.map(a => ({ ...a, is_default: a.id === accountId }))
+      );
+
+      toast.success('ডিফল্ট অ্যাকাউন্ট পরিবর্তন হয়েছে!');
+      return true;
+    } catch (error) {
+      console.error('Error setting default account:', error);
+      toast.error('ডিফল্ট অ্যাকাউন্ট পরিবর্তন করতে সমস্যা হয়েছে');
+      return false;
+    }
+  }, [user]);
+
   const addAccount = useCallback(async (account: Omit<Account, 'id' | 'balance' | 'is_default'>) => {
     if (!user) return null;
 
@@ -208,6 +241,7 @@ export const useAccounts = () => {
     deductFromBalance,
     transfer,
     getDefaultAccount,
+    setDefaultAccount,
     refetch: fetchAccounts,
   };
 };

@@ -5,7 +5,6 @@ import { BalanceCard } from '@/components/BalanceCard';
 import { TransactionList } from '@/components/TransactionList';
 import { ManualEntryForm } from '@/components/ManualEntryForm';
 import { AIChatbot } from '@/components/AIChatbot';
-import { VoiceCallDialer } from '@/components/VoiceCallDialer';
 import { FloatingActions } from '@/components/FloatingActions';
 import { BottomNav } from '@/components/BottomNav';
 import { StatsView } from '@/components/StatsView';
@@ -21,7 +20,6 @@ import { Navigate } from 'react-router-dom';
 const Index = () => {
   const [showManualForm, setShowManualForm] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
-  const [showVoiceCall, setShowVoiceCall] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const { user, isLoading: authLoading } = useAuth();
   
@@ -136,22 +134,33 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-32 lg:pb-8">
       <Header />
       
-      <main className="container mx-auto px-4 py-6 space-y-6 max-w-lg">
-        {renderContent()}
-      </main>
+      {/* Desktop Layout */}
+      <div className="lg:flex lg:min-h-[calc(100vh-64px)]">
+        {/* Desktop Sidebar Navigation */}
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:border-r lg:border-border lg:bg-card lg:p-4 lg:sticky lg:top-16 lg:h-[calc(100vh-64px)]">
+          <DesktopNav activeTab={activeTab} onTabChange={setActiveTab} />
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 container mx-auto px-4 py-6 space-y-6 max-w-lg lg:max-w-4xl lg:px-8">
+          {renderContent()}
+        </main>
+      </div>
 
       {activeTab === 'home' && (
         <FloatingActions
           onOpenManual={() => setShowManualForm(true)}
           onOpenAI={() => setShowAIChat(true)}
-          onOpenCall={() => setShowVoiceCall(true)}
         />
       )}
 
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      {/* Mobile Bottom Nav */}
+      <div className="lg:hidden">
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
 
       <AnimatePresence>
         {showManualForm && (
@@ -172,18 +181,52 @@ const Index = () => {
           />
         )}
       </AnimatePresence>
-
-      <AnimatePresence>
-        {showVoiceCall && (
-          <VoiceCallDialer
-            onAddTransaction={handleAddTransaction}
-            onClose={() => setShowVoiceCall(false)}
-            accounts={accounts}
-            onUpdateAccountBalance={handleUpdateAccountBalance}
-          />
-        )}
-      </AnimatePresence>
     </div>
+  );
+};
+
+// Desktop Navigation Component
+import { Home, BarChart3, Wallet, HandCoins, Settings } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const desktopNavItems = [
+  { id: 'home', label: 'হোম', icon: Home },
+  { id: 'stats', label: 'রিপোর্ট', icon: BarChart3 },
+  { id: 'loans', label: 'ধার', icon: HandCoins },
+  { id: 'accounts', label: 'অ্যাকাউন্ট', icon: Wallet },
+  { id: 'settings', label: 'সেটিংস', icon: Settings },
+];
+
+const DesktopNav = ({ activeTab, onTabChange }: { activeTab: string; onTabChange: (tab: string) => void }) => {
+  return (
+    <nav className="space-y-2">
+      {desktopNavItems.map(item => {
+        const Icon = item.icon;
+        const isActive = activeTab === item.id;
+        
+        return (
+          <button
+            key={item.id}
+            onClick={() => onTabChange(item.id)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative ${
+              isActive 
+                ? 'text-primary font-medium' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            }`}
+          >
+            {isActive && (
+              <motion.div
+                layoutId="desktopActiveTab"
+                className="absolute inset-0 bg-primary/10 rounded-xl"
+                transition={{ type: 'spring', duration: 0.5 }}
+              />
+            )}
+            <Icon className="w-5 h-5 relative z-10" />
+            <span className="relative z-10">{item.label}</span>
+          </button>
+        );
+      })}
+    </nav>
   );
 };
 

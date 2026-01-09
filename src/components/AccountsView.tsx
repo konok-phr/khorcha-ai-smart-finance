@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, CreditCard, Trash2, ArrowRightLeft, X } from 'lucide-react';
+import { Plus, CreditCard, Trash2, ArrowRightLeft, X, Star } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export const AccountsView = () => {
-  const { accounts, isLoading, addAccount, deleteAccount, transfer } = useAccounts();
+  const { accounts, isLoading, addAccount, deleteAccount, transfer, setDefaultAccount } = useAccounts();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [name, setName] = useState('');
@@ -49,8 +49,6 @@ export const AccountsView = () => {
       color: '#10B981',
     });
 
-    // If initial balance provided, we'd need to update it
-    // For now, just reset form
     setName('');
     setType('bank');
     setInitialBalance('');
@@ -68,6 +66,10 @@ export const AccountsView = () => {
       setTransferAmount('');
       setShowTransferForm(false);
     }
+  };
+
+  const handleSetDefault = async (accountId: string) => {
+    await setDefaultAccount(accountId);
   };
 
   const totalBalance = accounts.reduce((sum, a) => sum + Number(a.balance), 0);
@@ -132,32 +134,45 @@ export const AccountsView = () => {
                     <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-2xl">
                       {account.icon || typeInfo?.icon}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-medium">{account.name}</p>
+                        <p className="font-medium truncate">{account.name}</p>
                         {account.is_default && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full shrink-0">
                             ডিফল্ট
                           </span>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">{typeInfo?.label}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <p className={`font-semibold ${Number(account.balance) < 0 ? 'text-expense' : ''}`}>
                         {formatCurrency(Number(account.balance))}
                       </p>
                     </div>
-                    {!account.is_default && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-expense"
-                        onClick={() => deleteAccount(account.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!account.is_default && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-primary"
+                          onClick={() => handleSetDefault(account.id)}
+                          title="ডিফল্ট হিসেবে সেট করুন"
+                        >
+                          <Star className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {!account.is_default && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-expense"
+                          onClick={() => deleteAccount(account.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </Card>
               </motion.div>
