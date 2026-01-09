@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, Menu, RefreshCw, History } from 'lucide-react';
+import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, Menu, RefreshCw, History, FileText, Target } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,11 +12,13 @@ interface BottomNavProps {
 // Main tabs shown in bottom nav
 const mainNavItems = [
   { id: 'home', label: 'হোম', icon: Home },
-  { id: 'stats', label: 'রিপোর্ট', icon: BarChart3 },
+  { id: 'stats', label: 'স্ট্যাটস', icon: BarChart3 },
 ];
 
 // Secondary tabs shown in sidebar menu
 const sidebarNavItems = [
+  { id: 'reports', label: 'আর্থিক রিপোর্ট', icon: FileText, description: 'PDF এক্সপোর্ট ও বিশ্লেষণ' },
+  { id: 'goals', label: 'সেভিংস গোল', icon: Target, description: 'সঞ্চয় লক্ষ্য ট্র্যাকার' },
   { id: 'recurring', label: 'রিকারিং লেনদেন', icon: RefreshCw, description: 'মাসিক বিল ও সাবস্ক্রিপশন' },
   { id: 'credit-cards', label: 'ক্রেডিট কার্ড', icon: CreditCard, description: 'কার্ড ম্যানেজমেন্ট' },
   { id: 'loans', label: 'ধার/ঋণ', icon: HandCoins, description: 'ধার দেওয়া ও নেওয়া' },
