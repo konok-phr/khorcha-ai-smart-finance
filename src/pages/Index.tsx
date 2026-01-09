@@ -10,6 +10,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { StatsView } from '@/components/StatsView';
 import { AccountsView } from '@/components/AccountsView';
 import { LoansView } from '@/components/LoansView';
+import { CreditCardsView } from '@/components/CreditCardsView';
 import { SettingsView } from '@/components/SettingsView';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useAccounts } from '@/hooks/useAccounts';
@@ -122,6 +123,8 @@ const Index = () => {
         );
       case 'stats':
         return <StatsView transactions={transactions} />;
+      case 'credit-cards':
+        return <CreditCardsView />;
       case 'loans':
         return <LoansView />;
       case 'accounts':
@@ -186,12 +189,13 @@ const Index = () => {
 };
 
 // Desktop Navigation Component
-import { Home, BarChart3, Wallet, HandCoins, Settings } from 'lucide-react';
+import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const desktopNavItems = [
   { id: 'home', label: 'হোম', icon: Home },
   { id: 'stats', label: 'রিপোর্ট', icon: BarChart3 },
+  { id: 'credit-cards', label: 'ক্রেডিট কার্ড', icon: CreditCard },
   { id: 'loans', label: 'ধার', icon: HandCoins },
   { id: 'accounts', label: 'অ্যাকাউন্ট', icon: Wallet },
   { id: 'settings', label: 'সেটিংস', icon: Settings },
