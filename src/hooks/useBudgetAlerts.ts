@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useBudgets, Budget } from '@/hooks/useBudgets';
 import { Transaction } from '@/hooks/useTransactions';
+import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 
 interface UseBudgetAlertsProps {
@@ -11,6 +12,7 @@ interface UseBudgetAlertsProps {
 
 export const useBudgetAlerts = ({ transactions, enabled = true }: UseBudgetAlertsProps) => {
   const { budgets } = useBudgets();
+  const { preferences, isLoaded } = useNotificationPreferences();
 
   const getSpentAmount = useCallback((budget: Budget) => {
     const now = new Date();
@@ -42,7 +44,7 @@ export const useBudgetAlerts = ({ transactions, enabled = true }: UseBudgetAlert
   }, [transactions]);
 
   const checkBudgetAlerts = useCallback(() => {
-    if (!enabled || budgets.length === 0) return;
+    if (!enabled || budgets.length === 0 || !isLoaded) return;
 
     const categoryLabels: Record<string, string> = {
       'খাবার': 'খাবার', 'পরিবহন': 'পরিবহন', 'বিল': 'বিল',
@@ -58,19 +60,20 @@ export const useBudgetAlerts = ({ transactions, enabled = true }: UseBudgetAlert
       const percentage = (spent / budget.amount) * 100;
       const categoryLabel = categoryLabels[budget.category] || budget.category;
 
-      if (percentage >= 100) {
+      // Check user preferences before showing alerts
+      if (percentage >= 100 && preferences.budgetAlerts) {
         toast.error(`⚠️ ${categoryLabel} বাজেট ছাড়িয়ে গেছে!`, {
           description: `৳${spent.toLocaleString('bn-BD')} / ৳${budget.amount.toLocaleString('bn-BD')} (${Math.round(percentage)}%)`,
           duration: 5000,
         });
-      } else if (percentage >= 80) {
+      } else if (percentage >= 80 && preferences.budgetWarningThreshold) {
         toast.warning(`⚡ ${categoryLabel} বাজেট ${Math.round(percentage)}% শেষ`, {
           description: `বাকি আছে ৳${(budget.amount - spent).toLocaleString('bn-BD')}`,
           duration: 4000,
         });
       }
     });
-  }, [budgets, getSpentAmount, enabled]);
+  }, [budgets, getSpentAmount, enabled, preferences, isLoaded]);
 
   // Check on mount and when transactions change
   useEffect(() => {
