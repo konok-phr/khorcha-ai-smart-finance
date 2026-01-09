@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Calendar, RefreshCw, TrendingUp, TrendingDown, Power } from 'lucide-react';
+import { Plus, Trash2, Calendar, RefreshCw, TrendingUp, TrendingDown, Bell, AlertCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,12 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useRecurringTransactions, RecurringTransaction } from '@/hooks/useRecurringTransactions';
-import { format } from 'date-fns';
+import { format, differenceInDays, isToday, isTomorrow, addDays } from 'date-fns';
 import { bn } from 'date-fns/locale';
 
 const categories = {
   income: ['বেতন', 'ভাড়া', 'ফ্রিল্যান্স', 'ব্যবসা', 'বিনিয়োগ', 'অন্যান্য'],
-  expense: ['খাবার', 'পরিবহন', 'বিল', 'কেনাকাটা', 'স্বাস্থ্য', 'বিনোদন', 'শিক্ষা', 'অন্যান্য']
+  expense: ['খাবার', 'পরিবহন', 'বিল', 'কেনাকাটা', 'স্বাস্থ্য', 'বিনোদন', 'শিক্ষা', 'EMI', 'সাবস্ক্রিপশন', 'অন্যান্য']
 };
 
 export const RecurringView = () => {
@@ -25,6 +25,28 @@ export const RecurringView = () => {
   const [description, setDescription] = useState('');
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [nextDate, setNextDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Get upcoming reminders (due within 7 days)
+  const upcomingReminders = useMemo(() => {
+    const today = new Date();
+    const sevenDaysLater = addDays(today, 7);
+    
+    return recurringTransactions
+      .filter(t => t.is_active)
+      .filter(t => {
+        const nextDateObj = new Date(t.next_date);
+        return nextDateObj >= today && nextDateObj <= sevenDaysLater;
+      })
+      .sort((a, b) => new Date(a.next_date).getTime() - new Date(b.next_date).getTime());
+  }, [recurringTransactions]);
+
+  const getDateLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isToday(date)) return 'আজ';
+    if (isTomorrow(date)) return 'আগামীকাল';
+    const days = differenceInDays(date, new Date());
+    return `${days} দিন বাকি`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +78,67 @@ export const RecurringView = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Upcoming Reminders Section */}
+      {upcomingReminders.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-3"
+        >
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-warning" />
+            <h3 className="font-semibold text-foreground">আসন্ন রিমাইন্ডার</h3>
+          </div>
+          <div className="grid gap-2">
+            {upcomingReminders.map((reminder) => (
+              <Card
+                key={reminder.id}
+                className={`p-3 border-l-4 ${
+                  isToday(new Date(reminder.next_date))
+                    ? 'border-l-expense bg-expense/5'
+                    : isTomorrow(new Date(reminder.next_date))
+                    ? 'border-l-warning bg-warning/5'
+                    : 'border-l-primary bg-primary/5'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      reminder.type === 'income' ? 'bg-income/10' : 'bg-expense/10'
+                    }`}>
+                      {reminder.type === 'income' ? (
+                        <TrendingUp className="w-4 h-4 text-income" />
+                      ) : (
+                        <TrendingDown className="w-4 h-4 text-expense" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{reminder.description}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{reminder.category}</span>
+                        <span>•</span>
+                        <span className={`font-medium ${
+                          isToday(new Date(reminder.next_date)) ? 'text-expense' : 'text-warning'
+                        }`}>
+                          {getDateLabel(reminder.next_date)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <span className={`font-semibold ${
+                    reminder.type === 'income' ? 'text-income' : 'text-expense'
+                  }`}>
+                    {reminder.type === 'income' ? '+' : '-'}৳{Number(reminder.amount).toLocaleString('bn-BD')}
+                  </span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Header and Add Button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <RefreshCw className="w-5 h-5 text-primary" />
