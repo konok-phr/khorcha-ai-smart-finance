@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, User, Shield, HelpCircle, Sparkles, Target, RefreshCw, Download, ChevronRight } from 'lucide-react';
+import { LogOut, User, Shield, HelpCircle, Sparkles, Target, RefreshCw, Download, ChevronRight, Bell, Palette } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { BudgetView } from './BudgetView';
 import { RecurringView } from './RecurringView';
 import { ExportView } from './ExportView';
+import { ProfileSection } from './settings/ProfileSection';
+import { SecuritySection } from './settings/SecuritySection';
+import { HelpSection } from './settings/HelpSection';
 import { Transaction } from '@/hooks/useTransactions';
 
-type SettingsSection = 'main' | 'budget' | 'recurring' | 'export';
+type SettingsSection = 'main' | 'budget' | 'recurring' | 'export' | 'profile' | 'security' | 'help';
 
 interface SettingsViewProps {
   transactions?: Transaction[];
@@ -43,10 +46,28 @@ export const SettingsView = ({ transactions = [] }: SettingsViewProps) => {
     },
   ];
 
-  const otherItems = [
-    { icon: User, label: 'প্রোফাইল', description: 'আপনার তথ্য পরিবর্তন করুন', disabled: true },
-    { icon: Shield, label: 'নিরাপত্তা', description: 'পাসওয়ার্ড পরিবর্তন করুন', disabled: true },
-    { icon: HelpCircle, label: 'সাহায্য', description: 'সাধারণ প্রশ্ন ও উত্তর', disabled: true },
+  const accountItems = [
+    { 
+      id: 'profile' as const, 
+      icon: User, 
+      label: 'প্রোফাইল', 
+      description: 'আপনার তথ্য পরিবর্তন করুন',
+      color: 'text-primary'
+    },
+    { 
+      id: 'security' as const, 
+      icon: Shield, 
+      label: 'নিরাপত্তা', 
+      description: 'পাসওয়ার্ড পরিবর্তন করুন',
+      color: 'text-warning'
+    },
+    { 
+      id: 'help' as const, 
+      icon: HelpCircle, 
+      label: 'সাহায্য', 
+      description: 'সাধারণ প্রশ্ন ও উত্তর',
+      color: 'text-income'
+    },
   ];
 
   if (activeSection !== 'main') {
@@ -63,6 +84,9 @@ export const SettingsView = ({ transactions = [] }: SettingsViewProps) => {
         {activeSection === 'budget' && <BudgetView transactions={transactions} />}
         {activeSection === 'recurring' && <RecurringView />}
         {activeSection === 'export' && <ExportView transactions={transactions} />}
+        {activeSection === 'profile' && <ProfileSection />}
+        {activeSection === 'security' && <SecuritySection />}
+        {activeSection === 'help' && <HelpSection />}
       </div>
     );
   }
@@ -119,30 +143,31 @@ export const SettingsView = ({ transactions = [] }: SettingsViewProps) => {
         })}
       </div>
 
-      {/* Other Menu Items */}
+      {/* Account & Support Items */}
       <div className="space-y-2">
-        <p className="text-sm font-medium text-muted-foreground px-1">অন্যান্য</p>
-        {otherItems.map((item, index) => {
+        <p className="text-sm font-medium text-muted-foreground px-1">অ্যাকাউন্ট ও সাপোর্ট</p>
+        {accountItems.map((item, index) => {
           const Icon = item.icon;
           return (
             <motion.div
-              key={item.label}
+              key={item.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: (index + menuItems.length) * 0.1 }}
             >
-              <Card className="p-4 shadow-card opacity-50">
+              <Card 
+                className="p-4 shadow-card hover:shadow-float cursor-pointer transition-all"
+                onClick={() => setActiveSection(item.id)}
+              >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-muted-foreground" />
+                    <Icon className={`w-5 h-5 ${item.color}`} />
                   </div>
                   <div className="flex-1">
                     <p className="font-medium">{item.label}</p>
                     <p className="text-sm text-muted-foreground">{item.description}</p>
                   </div>
-                  <span className="text-xs bg-secondary px-2 py-1 rounded-full text-muted-foreground">
-                    শীঘ্রই
-                  </span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
                 </div>
               </Card>
             </motion.div>
