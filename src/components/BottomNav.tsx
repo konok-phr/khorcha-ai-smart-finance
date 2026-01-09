@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, MoreHorizontal, X } from 'lucide-react';
+import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface BottomNavProps {
@@ -16,6 +16,7 @@ const mainNavItems = [
 
 // Secondary tabs shown in "More" menu
 const moreNavItems = [
+  { id: 'recurring', label: 'রিকারিং', icon: RefreshCw },
   { id: 'credit-cards', label: 'ক্রেডিট কার্ড', icon: CreditCard },
   { id: 'loans', label: 'ধার/ঋণ', icon: HandCoins },
   { id: 'accounts', label: 'অ্যাকাউন্ট', icon: Wallet },
