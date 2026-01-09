@@ -16,6 +16,7 @@ import { RecurringView } from '@/components/RecurringView';
 import { MotivationalQuote } from '@/components/MotivationalQuote';
 import { SavingsGoalsView } from '@/components/SavingsGoalsView';
 import { ReportsView } from '@/components/ReportsView';
+import { InvestmentsView } from '@/components/InvestmentsView';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useBudgetAlerts } from '@/hooks/useBudgetAlerts';
@@ -134,6 +135,8 @@ const Index = () => {
         return <ReportsView transactions={transactions} />;
       case 'goals':
         return <SavingsGoalsView />;
+      case 'investments':
+        return <InvestmentsView />;
       case 'recurring':
         return <RecurringView />;
       case 'credit-cards':
@@ -202,7 +205,7 @@ const Index = () => {
 };
 
 // Desktop Navigation Component
-import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, RefreshCw, FileText, Target } from 'lucide-react';
+import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, RefreshCw, FileText, Target, LineChart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const desktopNavItems = [
@@ -210,6 +213,7 @@ const desktopNavItems = [
   { id: 'stats', label: 'স্ট্যাটস', icon: BarChart3 },
   { id: 'reports', label: 'রিপোর্ট', icon: FileText },
   { id: 'goals', label: 'সেভিংস গোল', icon: Target },
+  { id: 'investments', label: 'বিনিয়োগ', icon: LineChart },
   { id: 'recurring', label: 'রিকারিং', icon: RefreshCw },
   { id: 'credit-cards', label: 'ক্রেডিট কার্ড', icon: CreditCard },
   { id: 'loans', label: 'ধার', icon: HandCoins },

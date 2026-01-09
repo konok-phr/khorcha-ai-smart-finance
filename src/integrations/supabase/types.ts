@@ -131,6 +131,54 @@ export type Database = {
         }
         Relationships: []
       }
+      investments: {
+        Row: {
+          buy_date: string
+          buy_price: number
+          created_at: string
+          current_price: number
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          quantity: number
+          symbol: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          buy_date?: string
+          buy_price: number
+          created_at?: string
+          current_price: number
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          quantity?: number
+          symbol?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          buy_date?: string
+          buy_price?: number
+          created_at?: string
+          current_price?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          quantity?: number
+          symbol?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       loans: {
         Row: {
           amount: number
