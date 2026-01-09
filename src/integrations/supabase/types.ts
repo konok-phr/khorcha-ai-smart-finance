@@ -226,6 +226,48 @@ export type Database = {
           },
         ]
       }
+      savings_goals: {
+        Row: {
+          color: string | null
+          created_at: string
+          current_amount: number
+          icon: string | null
+          id: string
+          is_completed: boolean
+          name: string
+          target_amount: number
+          target_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          current_amount?: number
+          icon?: string | null
+          id?: string
+          is_completed?: boolean
+          name: string
+          target_amount: number
+          target_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          current_amount?: number
+          icon?: string | null
+          id?: string
+          is_completed?: boolean
+          name?: string
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           account_id: string | null

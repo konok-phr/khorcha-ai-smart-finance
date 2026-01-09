@@ -58,7 +58,7 @@ const History = () => {
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
 
   const filteredTransactions = useMemo(() => {
     let result = transactions.filter(t => {
@@ -162,13 +162,13 @@ const History = () => {
   };
 
   const toggleMonth = (key: string) => {
-    const newExpanded = new Set(expandedMonths);
-    if (newExpanded.has(key)) {
-      newExpanded.delete(key);
+    const newCollapsed = new Set(collapsedMonths);
+    if (newCollapsed.has(key)) {
+      newCollapsed.delete(key);
     } else {
-      newExpanded.add(key);
+      newCollapsed.add(key);
     }
-    setExpandedMonths(newExpanded);
+    setCollapsedMonths(newCollapsed);
   };
 
   // Summary stats
@@ -369,8 +369,8 @@ const History = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            {groupedTransactions.map((group, groupIndex) => {
-              const isExpanded = expandedMonths.has(group.key) || groupIndex === 0;
+            {groupedTransactions.map((group) => {
+              const isExpanded = !collapsedMonths.has(group.key);
               
               return (
                 <Card key={group.key} className="overflow-hidden">
