@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, Menu, RefreshCw, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface BottomNavProps {
@@ -14,33 +14,52 @@ const mainNavItems = [
   { id: 'stats', label: 'রিপোর্ট', icon: BarChart3 },
 ];
 
-// Secondary tabs shown in "More" menu
-const moreNavItems = [
-  { id: 'recurring', label: 'রিকারিং', icon: RefreshCw },
-  { id: 'credit-cards', label: 'ক্রেডিট কার্ড', icon: CreditCard },
-  { id: 'loans', label: 'ধার/ঋণ', icon: HandCoins },
-  { id: 'accounts', label: 'অ্যাকাউন্ট', icon: Wallet },
-  { id: 'settings', label: 'সেটিংস', icon: Settings },
+// Secondary tabs shown in sidebar menu
+const sidebarNavItems = [
+  { id: 'recurring', label: 'রিকারিং লেনদেন', icon: RefreshCw, description: 'মাসিক বিল ও সাবস্ক্রিপশন' },
+  { id: 'credit-cards', label: 'ক্রেডিট কার্ড', icon: CreditCard, description: 'কার্ড ম্যানেজমেন্ট' },
+  { id: 'loans', label: 'ধার/ঋণ', icon: HandCoins, description: 'ধার দেওয়া ও নেওয়া' },
+  { id: 'accounts', label: 'অ্যাকাউন্ট', icon: Wallet, description: 'ব্যাংক ও ওয়ালেট' },
+  { id: 'settings', label: 'সেটিংস', icon: Settings, description: 'অ্যাপ কাস্টমাইজেশন' },
 ];
 
-// All items for checking active state
-const allNavItems = [...mainNavItems, ...moreNavItems];
-
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // Check if current tab is in "More" menu
-  const isMoreTabActive = moreNavItems.some(item => item.id === activeTab);
+  // Check if current tab is in sidebar menu
+  const isSidebarTabActive = sidebarNavItems.some(item => item.id === activeTab);
   
-  const handleMoreItemClick = (tabId: string) => {
+  const handleSidebarItemClick = (tabId: string) => {
     onTabChange(tabId);
-    setIsMoreOpen(false);
+    setIsSidebarOpen(false);
   };
 
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border safe-area-pb">
         <div className="flex items-center justify-around py-2">
+          {/* Menu Button - Left Side */}
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="flex flex-col items-center gap-1 px-6 py-2 relative"
+          >
+            {isSidebarTabActive && (
+              <motion.div
+                layoutId="activeTab"
+                className="absolute inset-0 bg-primary/10 rounded-xl"
+                transition={{ type: 'spring', duration: 0.5 }}
+              />
+            )}
+            <Menu className={`w-5 h-5 relative z-10 transition-colors ${
+              isSidebarTabActive ? 'text-primary' : 'text-muted-foreground'
+            }`} />
+            <span className={`text-xs relative z-10 transition-colors ${
+              isSidebarTabActive ? 'text-primary font-medium' : 'text-muted-foreground'
+            }`}>
+              মেনু
+            </span>
+          </button>
+
           {mainNavItems.map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -69,60 +88,75 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
               </button>
             );
           })}
-          
-          {/* More Button */}
-          <button
-            onClick={() => setIsMoreOpen(true)}
-            className="flex flex-col items-center gap-1 px-6 py-2 relative"
-          >
-            {isMoreTabActive && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute inset-0 bg-primary/10 rounded-xl"
-                transition={{ type: 'spring', duration: 0.5 }}
-              />
-            )}
-            <MoreHorizontal className={`w-5 h-5 relative z-10 transition-colors ${
-              isMoreTabActive ? 'text-primary' : 'text-muted-foreground'
-            }`} />
-            <span className={`text-xs relative z-10 transition-colors ${
-              isMoreTabActive ? 'text-primary font-medium' : 'text-muted-foreground'
-            }`}>
-              আরও
-            </span>
-          </button>
         </div>
       </nav>
 
-      {/* More Menu Sheet */}
-      <Sheet open={isMoreOpen} onOpenChange={setIsMoreOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl">
-          <SheetHeader className="pb-4">
-            <SheetTitle className="text-center">আরও অপশন</SheetTitle>
-          </SheetHeader>
-          
-          <div className="grid grid-cols-2 gap-3 pb-6">
-            {moreNavItems.map(item => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleMoreItemClick(item.id)}
-                  className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
-                    isActive 
-                      ? 'bg-primary/10 border-primary/30 text-primary' 
-                      : 'bg-muted/30 border-border hover:bg-muted/50'
-                  }`}
+      {/* Left Sidebar Sheet */}
+      <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+        <SheetContent side="left" className="w-[280px] p-0">
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="p-6 gradient-primary">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-primary-foreground">Khorcha AI</h2>
+                  <p className="text-sm text-primary-foreground/80 mt-1">স্মার্ট মানি ম্যানেজার</p>
+                </div>
+                <button 
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <span className={`text-sm ${isActive ? 'font-medium' : ''}`}>
-                    {item.label}
-                  </span>
+                  <X className="w-4 h-4 text-primary-foreground" />
                 </button>
-              );
-            })}
+              </div>
+            </div>
+            
+            {/* Navigation Items */}
+            <div className="flex-1 py-4 px-3 overflow-y-auto">
+              <p className="text-xs font-medium text-muted-foreground px-3 mb-2">নেভিগেশন</p>
+              <div className="space-y-1">
+                {sidebarNavItems.map((item, index) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  
+                  return (
+                    <motion.button
+                      key={item.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => handleSidebarItemClick(item.id)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
+                        isActive 
+                          ? 'bg-primary/10 text-primary' 
+                          : 'hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        isActive ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+                      }`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium ${isActive ? 'text-primary' : ''}`}>
+                          {item.label}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {item.description}
+                        </p>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-border">
+              <p className="text-xs text-muted-foreground text-center">
+                Khorcha AI v1.0.0
+              </p>
+            </div>
           </div>
         </SheetContent>
       </Sheet>

@@ -10,9 +10,11 @@ import { ExportView } from './ExportView';
 import { ProfileSection } from './settings/ProfileSection';
 import { SecuritySection } from './settings/SecuritySection';
 import { HelpSection } from './settings/HelpSection';
+import { NotificationSection } from './settings/NotificationSection';
+import { ThemeSection } from './settings/ThemeSection';
 import { Transaction } from '@/hooks/useTransactions';
 
-type SettingsSection = 'main' | 'budget' | 'recurring' | 'export' | 'profile' | 'security' | 'help';
+type SettingsSection = 'main' | 'budget' | 'recurring' | 'export' | 'profile' | 'security' | 'help' | 'notifications' | 'theme';
 
 interface SettingsViewProps {
   transactions?: Transaction[];
@@ -43,6 +45,23 @@ export const SettingsView = ({ transactions = [] }: SettingsViewProps) => {
       label: 'রিপোর্ট এক্সপোর্ট', 
       description: 'CSV বা TXT ফরম্যাটে ডাউনলোড করুন',
       color: 'text-accent-foreground'
+    },
+  ];
+
+  const preferenceItems = [
+    { 
+      id: 'notifications' as const, 
+      icon: Bell, 
+      label: 'নোটিফিকেশন', 
+      description: 'সতর্কতা ও রিমাইন্ডার নিয়ন্ত্রণ',
+      color: 'text-warning'
+    },
+    { 
+      id: 'theme' as const, 
+      icon: Palette, 
+      label: 'থিম', 
+      description: 'লাইট/ডার্ক মোড নির্বাচন করুন',
+      color: 'text-primary'
     },
   ];
 
@@ -87,6 +106,8 @@ export const SettingsView = ({ transactions = [] }: SettingsViewProps) => {
         {activeSection === 'profile' && <ProfileSection />}
         {activeSection === 'security' && <SecuritySection />}
         {activeSection === 'help' && <HelpSection />}
+        {activeSection === 'notifications' && <NotificationSection />}
+        {activeSection === 'theme' && <ThemeSection />}
       </div>
     );
   }
@@ -143,6 +164,38 @@ export const SettingsView = ({ transactions = [] }: SettingsViewProps) => {
         })}
       </div>
 
+      {/* Preference Items */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-muted-foreground px-1">প্রেফারেন্স</p>
+        {preferenceItems.map((item, index) => {
+          const Icon = item.icon;
+          return (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: (index + menuItems.length) * 0.1 }}
+            >
+              <Card 
+                className="p-4 shadow-card hover:shadow-float cursor-pointer transition-all"
+                onClick={() => setActiveSection(item.id)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                    <Icon className={`w-5 h-5 ${item.color}`} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{item.label}</p>
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
+
       {/* Account & Support Items */}
       <div className="space-y-2">
         <p className="text-sm font-medium text-muted-foreground px-1">অ্যাকাউন্ট ও সাপোর্ট</p>
@@ -153,7 +206,7 @@ export const SettingsView = ({ transactions = [] }: SettingsViewProps) => {
               key={item.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: (index + menuItems.length) * 0.1 }}
+              transition={{ delay: (index + menuItems.length + preferenceItems.length) * 0.1 }}
             >
               <Card 
                 className="p-4 shadow-card hover:shadow-float cursor-pointer transition-all"
