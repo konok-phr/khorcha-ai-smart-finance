@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, Menu, RefreshCw, X } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, Menu, RefreshCw, History } from 'lucide-react';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { useNavigate } from 'react-router-dom';
 
 interface BottomNavProps {
   activeTab: string;
@@ -25,6 +26,7 @@ const sidebarNavItems = [
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Check if current tab is in sidebar menu
   const isSidebarTabActive = sidebarNavItems.some(item => item.id === activeTab);
@@ -32,6 +34,11 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
   const handleSidebarItemClick = (tabId: string) => {
     onTabChange(tabId);
     setIsSidebarOpen(false);
+  };
+
+  const handleHistoryClick = () => {
+    setIsSidebarOpen(false);
+    navigate('/history');
   };
 
   return (
@@ -91,23 +98,15 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
         </div>
       </nav>
 
-      {/* Left Sidebar Sheet */}
+      {/* Left Sidebar Sheet - No default close button */}
       <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-        <SheetContent side="left" className="w-[280px] p-0">
+        <SheetContent side="left" className="w-[280px] p-0 [&>button]:hidden">
           <div className="flex flex-col h-full">
             {/* Header */}
             <div className="p-6 gradient-primary">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-primary-foreground">Khorcha AI</h2>
-                  <p className="text-sm text-primary-foreground/80 mt-1">স্মার্ট মানি ম্যানেজার</p>
-                </div>
-                <button 
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
-                >
-                  <X className="w-4 h-4 text-primary-foreground" />
-                </button>
+              <div>
+                <h2 className="text-xl font-bold text-primary-foreground">Khorcha AI</h2>
+                <p className="text-sm text-primary-foreground/80 mt-1">স্মার্ট মানি ম্যানেজার</p>
               </div>
             </div>
             
@@ -148,6 +147,28 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
                     </motion.button>
                   );
                 })}
+              </div>
+
+              {/* History Link */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-xs font-medium text-muted-foreground px-3 mb-2">আরো</p>
+                <motion.button
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  onClick={handleHistoryClick}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left hover:bg-muted/50"
+                >
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-secondary">
+                    <History className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">সম্পূর্ণ ইতিহাস</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      সব লেনদেন দেখুন
+                    </p>
+                  </div>
+                </motion.button>
               </div>
             </div>
 

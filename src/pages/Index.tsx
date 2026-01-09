@@ -13,6 +13,7 @@ import { LoansView } from '@/components/LoansView';
 import { CreditCardsView } from '@/components/CreditCardsView';
 import { SettingsView } from '@/components/SettingsView';
 import { RecurringView } from '@/components/RecurringView';
+import { MotivationalQuote } from '@/components/MotivationalQuote';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useBudgetAlerts } from '@/hooks/useBudgetAlerts';
@@ -104,6 +105,9 @@ const Index = () => {
       case 'home':
         return (
           <>
+            {/* Motivational Quote */}
+            <MotivationalQuote />
+            
             <BalanceCard
               balance={balance}
               totalIncome={totalIncome}
@@ -115,7 +119,7 @@ const Index = () => {
                 সাম্প্রতিক লেনদেন
               </h2>
               <TransactionList
-                transactions={transactions}
+                transactions={transactions.slice(0, 10)}
                 onDelete={deleteTransaction}
                 isLoading={isLoading}
               />
