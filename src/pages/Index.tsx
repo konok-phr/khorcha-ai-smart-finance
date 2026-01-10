@@ -17,9 +17,13 @@ import { MotivationalQuote } from '@/components/MotivationalQuote';
 import { SavingsGoalsView } from '@/components/SavingsGoalsView';
 import { ReportsView } from '@/components/ReportsView';
 import { InvestmentsView } from '@/components/InvestmentsView';
+import { AdminUsersView } from '@/components/AdminUsersView';
+import { Onboarding } from '@/components/Onboarding';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useBudgetAlerts } from '@/hooks/useBudgetAlerts';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 
@@ -28,11 +32,13 @@ const Index = () => {
   const [showAIChat, setShowAIChat] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const { user, isLoading: authLoading } = useAuth();
+  const { profile, isLoading: profileLoading, isAdmin, completeOnboarding } = useUserProfile();
   
   const {
     transactions,
     isLoading,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     totalIncome,
     totalExpense,
@@ -46,7 +52,6 @@ const Index = () => {
     getDefaultAccount,
   } = useAccounts();
 
-  // Budget alerts
   useBudgetAlerts({ transactions, enabled: true });
 
   const handleAddTransaction = useCallback(async (transaction: {
@@ -57,7 +62,6 @@ const Index = () => {
     transaction_date?: string;
     account_id?: string;
   }) => {
-    // If no account specified, use default
     let accountId = transaction.account_id;
     if (!accountId) {
       const defaultAccount = getDefaultAccount();
@@ -71,7 +75,6 @@ const Index = () => {
       account_id: accountId,
     } as any);
 
-    // Update account balance
     if (result && accountId) {
       if (transaction.type === 'income') {
         await addToBalance(accountId, transaction.amount);
@@ -91,16 +94,21 @@ const Index = () => {
     }
   }, [addToBalance, deductFromBalance]);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">লোড হচ্ছে...</p>
-      </div>
-    );
+  if (authLoading || profileLoading) {
+    return <LoadingSpinner fullScreen message="Khorcha AI লোড হচ্ছে..." />;
   }
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Show onboarding for first-time users
+  if (profile && !profile.has_completed_onboarding) {
+    return (
+      <AnimatePresence>
+        <Onboarding onComplete={completeOnboarding} />
+      </AnimatePresence>
+    );
   }
 
   const renderContent = () => {
@@ -124,6 +132,7 @@ const Index = () => {
               <TransactionList
                 transactions={transactions.slice(0, 10)}
                 onDelete={deleteTransaction}
+                onEdit={updateTransaction}
                 isLoading={isLoading}
               />
             </section>
@@ -145,6 +154,8 @@ const Index = () => {
         return <LoansView />;
       case 'accounts':
         return <AccountsView />;
+      case 'admin':
+        return <AdminUsersView />;
       case 'settings':
         return <SettingsView transactions={transactions} />;
       default:
@@ -205,7 +216,7 @@ const Index = () => {
 };
 
 // Desktop Navigation Component
-import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, RefreshCw, FileText, Target, LineChart } from 'lucide-react';
+import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, RefreshCw, FileText, Target, LineChart, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const desktopNavItems = [
@@ -218,6 +229,7 @@ const desktopNavItems = [
   { id: 'credit-cards', label: 'ক্রেডিট কার্ড', icon: CreditCard },
   { id: 'loans', label: 'ধার', icon: HandCoins },
   { id: 'accounts', label: 'অ্যাকাউন্ট', icon: Wallet },
+  { id: 'admin', label: 'অ্যাডমিন', icon: ShieldCheck },
   { id: 'settings', label: 'সেটিংস', icon: Settings },
 ];
 

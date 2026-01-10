@@ -98,6 +98,32 @@ export const useTransactions = () => {
     }
   }, []);
 
+  const updateTransaction = useCallback(async (id: string, updates: {
+    type?: 'income' | 'expense';
+    amount?: number;
+    category?: string;
+    description?: string;
+  }) => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setTransactions(prev => prev.map(t => t.id === id ? (data as Transaction) : t));
+      toast.success('লেনদেন আপডেট হয়েছে!');
+      return true;
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      toast.error('লেনদেন আপডেট করতে সমস্যা হয়েছে');
+      return false;
+    }
+  }, []);
+
   const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -112,6 +138,7 @@ export const useTransactions = () => {
     transactions,
     isLoading,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     totalIncome,
     totalExpense,
