@@ -78,16 +78,48 @@ export const useAdminUsers = () => {
     }
 
     try {
-      // Delete from profiles (cascade will handle related data)
-      const { error } = await supabase
+      // Delete all user activities first
+      const deletePromises = [
+        supabase.from('transactions').delete().eq('user_id', userId),
+        supabase.from('accounts').delete().eq('user_id', userId),
+        supabase.from('budgets').delete().eq('user_id', userId),
+        supabase.from('recurring_transactions').delete().eq('user_id', userId),
+        supabase.from('savings_goals').delete().eq('user_id', userId),
+        supabase.from('credit_cards').delete().eq('user_id', userId),
+        supabase.from('investments').delete().eq('user_id', userId),
+        supabase.from('loans').delete().eq('user_id', userId),
+      ];
+
+      // Wait for all activity deletions
+      const results = await Promise.all(deletePromises);
+      
+      // Check for any errors in deletions
+      for (const result of results) {
+        if (result.error) {
+          console.error('Error deleting user data:', result.error);
+        }
+      }
+
+      // Delete user role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (roleError) {
+        console.error('Error deleting user role:', roleError);
+      }
+
+      // Finally delete the profile
+      const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
       setUsers(prev => prev.filter(u => u.user_id !== userId));
-      toast.success('ব্যবহারকারী মুছে ফেলা হয়েছে');
+      toast.success('ব্যবহারকারী এবং তার সকল ডেটা মুছে ফেলা হয়েছে');
       return true;
     } catch (error) {
       console.error('Error deleting user:', error);
