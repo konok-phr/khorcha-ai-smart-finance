@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, Menu, RefreshCw, History, FileText, Target, LineChart, X } from 'lucide-react';
+import { Home, BarChart3, Wallet, HandCoins, CreditCard, Settings, Menu, RefreshCw, History, FileText, Target, LineChart, X, ShieldCheck } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,6 +24,7 @@ const sidebarNavItems = [
   { id: 'credit-cards', label: 'ক্রেডিট কার্ড', icon: CreditCard, description: 'কার্ড ম্যানেজমেন্ট' },
   { id: 'loans', label: 'ধার/ঋণ', icon: HandCoins, description: 'ধার দেওয়া ও নেওয়া' },
   { id: 'accounts', label: 'অ্যাকাউন্ট', icon: Wallet, description: 'ব্যাংক ও ওয়ালেট' },
+  { id: 'admin', label: 'অ্যাডমিন প্যানেল', icon: ShieldCheck, description: 'ইউজার ম্যানেজমেন্ট' },
   { id: 'settings', label: 'সেটিংস', icon: Settings, description: 'অ্যাপ কাস্টমাইজেশন' },
 ];
 

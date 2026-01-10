@@ -1,16 +1,24 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, Filter, X, Calendar, Tag } from 'lucide-react';
+import { Trash2, Search, Filter, X, Calendar, Tag, Edit2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Transaction } from '@/hooks/useTransactions';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/types/transaction';
+import { EditTransactionDialog } from './EditTransactionDialog';
+import { TransactionSkeleton } from './LoadingSpinner';
 
 interface TransactionListProps {
   transactions: Transaction[];
   onDelete: (id: string) => void;
+  onEdit?: (id: string, updates: {
+    amount: number;
+    category: string;
+    description: string;
+    type: 'income' | 'expense';
+  }) => Promise<boolean>;
   isLoading?: boolean;
 }
 
@@ -37,13 +45,14 @@ const getCategoryInfo = (type: 'income' | 'expense', categoryId: string) => {
 
 const allCategories = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
 
-export const TransactionList = ({ transactions, onDelete, isLoading }: TransactionListProps) => {
+export const TransactionList = ({ transactions, onDelete, onEdit, isLoading }: TransactionListProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [visibleCount, setVisibleCount] = useState(12);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
@@ -103,12 +112,20 @@ export const TransactionList = ({ transactions, onDelete, isLoading }: Transacti
   };
 
   if (isLoading) {
-    return (
-      <Card className="p-8 text-center shadow-card">
-        <p className="text-muted-foreground">লোড হচ্ছে...</p>
-      </Card>
-    );
+    return <TransactionSkeleton />;
   }
+
+  const handleEditSave = async (id: string, updates: {
+    amount: number;
+    category: string;
+    description: string;
+    type: 'income' | 'expense';
+  }) => {
+    if (onEdit) {
+      return await onEdit(id, updates);
+    }
+    return false;
+  };
 
   return (
     <div className="space-y-3">
@@ -283,6 +300,18 @@ export const TransactionList = ({ transactions, onDelete, isLoading }: Transacti
                         </p>
                       </div>
                       
+                      {/* Edit Button */}
+                      {onEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 text-muted-foreground hover:text-primary"
+                          onClick={() => setEditingTransaction(transaction)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                      
                       <Button
                         variant="ghost"
                         size="icon"
@@ -312,6 +341,17 @@ export const TransactionList = ({ transactions, onDelete, isLoading }: Transacti
           )}
         </>
       )}
+
+      {/* Edit Transaction Dialog */}
+      <AnimatePresence>
+        {editingTransaction && (
+          <EditTransactionDialog
+            transaction={editingTransaction}
+            onSave={handleEditSave}
+            onClose={() => setEditingTransaction(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
