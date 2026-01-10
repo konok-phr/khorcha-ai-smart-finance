@@ -95,7 +95,7 @@ const Index = () => {
   }, [addToBalance, deductFromBalance]);
 
   if (authLoading || profileLoading) {
-    return <LoadingSpinner fullScreen message="Khorcha AI লোড হচ্ছে..." />;
+    return <LoadingSpinner fullScreen message="HisabAI লোড হচ্ছে..." />;
   }
 
   if (!user) {
