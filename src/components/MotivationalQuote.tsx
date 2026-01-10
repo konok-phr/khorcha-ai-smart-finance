@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Quote, RefreshCw } from 'lucide-react';
+import { Quote, RefreshCw, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -53,11 +53,19 @@ export const MotivationalQuote = () => {
   }, [currentQuote]);
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+    <Card className="p-4 bg-gradient-to-br from-primary/5 via-primary/8 to-accent/5 border-primary/15 shadow-card hover:shadow-md transition-shadow overflow-hidden relative">
+      {/* Decorative elements */}
+      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
+      <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-accent/10 to-transparent rounded-tr-full" />
+      
+      <div className="flex items-start gap-3 relative">
+        <motion.div 
+          className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0"
+          animate={{ rotate: [0, 5, -5, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        >
           <Quote className="w-5 h-5 text-primary" />
-        </div>
+        </motion.div>
         <div className="flex-1 min-w-0">
           <AnimatePresence mode="wait">
             <motion.div
@@ -70,21 +78,24 @@ export const MotivationalQuote = () => {
               <p className="text-sm font-medium text-foreground leading-relaxed">
                 "{currentQuote.quote}"
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                — {currentQuote.author}
+              <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-accent" />
+                {currentQuote.author}
               </p>
             </motion.div>
           </AnimatePresence>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={getNewQuote}
-          disabled={isAnimating}
-          className="shrink-0 h-8 w-8"
-        >
-          <RefreshCw className={`w-4 h-4 ${isAnimating ? 'animate-spin' : ''}`} />
-        </Button>
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={getNewQuote}
+            disabled={isAnimating}
+            className="shrink-0 h-9 w-9 rounded-xl hover:bg-primary/10"
+          >
+            <RefreshCw className={`w-4 h-4 text-primary ${isAnimating ? 'animate-spin' : ''}`} />
+          </Button>
+        </motion.div>
       </div>
     </Card>
   );
