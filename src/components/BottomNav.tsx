@@ -115,7 +115,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
                 <X className="w-4 h-4 text-primary-foreground" />
               </button>
               <div>
-                <h2 className="text-xl font-bold text-primary-foreground">Khorcha AI</h2>
+                <h2 className="text-xl font-bold text-primary-foreground">HisabAI</h2>
                 <p className="text-sm text-primary-foreground/80 mt-1">স্মার্ট মানি ম্যানেজার</p>
               </div>
             </div>
@@ -185,7 +185,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
             {/* Footer */}
             <div className="p-4 border-t border-border">
               <p className="text-xs text-muted-foreground text-center">
-                Khorcha AI v1.0.0
+                HisabAI v1.0.0
               </p>
             </div>
           </div>

@@ -34,7 +34,7 @@ export const Header = () => {
             </motion.div>
             <div>
               <h1 className="text-xl font-bold text-foreground tracking-tight">
-                Khorcha <span className="text-gradient-primary">AI</span>
+                Hisab<span className="text-gradient-primary">AI</span>
               </h1>
               <p className="text-xs text-muted-foreground font-medium">স্মার্ট মানি ম্যানেজার</p>
             </div>
