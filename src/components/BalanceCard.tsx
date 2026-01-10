@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 interface BalanceCardProps {
@@ -17,57 +17,92 @@ const formatCurrency = (amount: number) => {
 };
 
 export const BalanceCard = ({ balance, totalIncome, totalExpense }: BalanceCardProps) => {
+  const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome * 100) : 0;
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
     >
-      <Card className="overflow-hidden gradient-hero shadow-float border-0">
-        <div className="p-6 text-primary-foreground">
-          <div className="flex items-center gap-2 mb-4">
-            <Wallet className="w-5 h-5 opacity-80" />
-            <span className="text-sm font-medium opacity-80">মোট ব্যালেন্স</span>
+      <Card className="overflow-hidden border-0 shadow-float relative">
+        {/* Background gradient with pattern */}
+        <div className="absolute inset-0 gradient-hero" />
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+        
+        <div className="relative p-6 text-primary-foreground">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <motion.div 
+                className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+              >
+                <Wallet className="w-5 h-5" />
+              </motion.div>
+              <div>
+                <span className="text-sm font-medium opacity-90">মোট ব্যালেন্স</span>
+                <p className="text-xs opacity-60">এই মাসে</p>
+              </div>
+            </div>
+            {savingsRate > 0 && (
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.5, type: 'spring' }}
+                className="px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm"
+              >
+                <span className="text-xs font-medium">
+                  💰 {savingsRate.toFixed(0)}% সঞ্চয়
+                </span>
+              </motion.div>
+            )}
           </div>
           
+          {/* Balance Amount */}
           <motion.div
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring' }}
-            className="text-4xl font-bold mb-6"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            className="mb-6"
           >
-            {formatCurrency(balance)}
+            <div className="text-4xl lg:text-5xl font-bold tracking-tight">
+              {formatCurrency(balance)}
+            </div>
           </motion.div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Income & Expense Cards */}
+          <div className="grid grid-cols-2 gap-3">
             <motion.div
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-4"
+              transition={{ delay: 0.3, type: 'spring' }}
+              className="bg-white/10 hover:bg-white/15 backdrop-blur-sm rounded-2xl p-4 transition-colors cursor-default"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-green-400/30 flex items-center justify-center">
+                  <ArrowUpRight className="w-5 h-5 text-green-200" />
                 </div>
-                <span className="text-sm opacity-80">আয়</span>
+                <span className="text-sm font-medium opacity-90">আয়</span>
               </div>
-              <p className="text-lg font-semibold">{formatCurrency(totalIncome)}</p>
+              <p className="text-xl font-bold">{formatCurrency(totalIncome)}</p>
             </motion.div>
 
             <motion.div
               initial={{ x: 20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-4"
+              transition={{ delay: 0.4, type: 'spring' }}
+              className="bg-white/10 hover:bg-white/15 backdrop-blur-sm rounded-2xl p-4 transition-colors cursor-default"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
-                  <TrendingDown className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-red-400/30 flex items-center justify-center">
+                  <ArrowDownRight className="w-5 h-5 text-red-200" />
                 </div>
-                <span className="text-sm opacity-80">খরচ</span>
+                <span className="text-sm font-medium opacity-90">খরচ</span>
               </div>
-              <p className="text-lg font-semibold">{formatCurrency(totalExpense)}</p>
+              <p className="text-xl font-bold">{formatCurrency(totalExpense)}</p>
             </motion.div>
           </div>
         </div>
